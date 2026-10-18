@@ -1,0 +1,13 @@
+{
+  "releasePageUrl": "https://github.com/Arven-Labs/truthid/releases/tag/v2.2.3",
+  "urls": {
+    "deb": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID_2.2.3_amd64.deb",
+    "appImage": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID_2.2.3_amd64.AppImage",
+    "rpm": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID-2.2.3-1.x86_64.rpm",
+    "exe": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID_2.2.3_x64-setup.exe",
+    "msi": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID_2.2.3_x64_en-US.msi",
+    "dmg": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/TruthID_2.2.3_aarch64.dmg",
+    "apk": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/app-release.apk",
+    "extension": "https://github.com/Arven-Labs/truthid/releases/download/v2.2.3/truthid-vault-extension-2.0.0-chrome.zip"
+  }
+}

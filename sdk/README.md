@@ -68,7 +68,7 @@ dependencies:
   truthid_sdk: ^0.1.0
 ```
 
-Pure Dart, no `package:flutter` dependency — works in Flutter apps (mobile or desktop) and plain Dart backends alike. Unlike the other three, this one also ships a second role: `TruthIDRequester`, for requesting a signature/transaction/pin from the user's phone directly — see the [Dart reference](https://masterlxz.github.io/truthid/docs/sdk/dart) for details.
+Pure Dart, no `package:flutter` dependency — works in Flutter apps (mobile or desktop) and plain Dart backends alike. Unlike the other three, this one also ships a second role: `TruthIDRequester`, for requesting a signature/transaction/pin from the user's phone directly — see the [Dart reference](https://arven-labs.github.io/truthid/docs/sdk/dart) for details.
 
 ---
 
@@ -159,10 +159,10 @@ if (result.valid) {
 
 Full parameter tables, return types, and failure reasons for every method now live on the docs site — one detailed reference page per language:
 
-- **[TypeScript reference](https://masterlxz.github.io/truthid/docs/sdk/typescript)**
-- **[Python reference](https://masterlxz.github.io/truthid/docs/sdk/python)**
-- **[Ruby reference](https://masterlxz.github.io/truthid/docs/sdk/ruby)**
-- **[Dart reference](https://masterlxz.github.io/truthid/docs/sdk/dart)** — verifier (`TruthIDClient`) and cross-device requester (`TruthIDRequester`)
+- **[TypeScript reference](https://arven-labs.github.io/truthid/docs/sdk/typescript)**
+- **[Python reference](https://arven-labs.github.io/truthid/docs/sdk/python)**
+- **[Ruby reference](https://arven-labs.github.io/truthid/docs/sdk/ruby)**
+- **[Dart reference](https://arven-labs.github.io/truthid/docs/sdk/dart)** — verifier (`TruthIDClient`) and cross-device requester (`TruthIDRequester`)
 
 Quick summary of what each client gives you:
 
@@ -173,7 +173,7 @@ Quick summary of what each client gives you:
 | `verifySession` / `verify_session` | Check whether a session hash is still valid (not revoked) |
 | `checkDeviceStatus` / `check_device_status` | Look up a device's current status on the blockchain |
 
-The Dart SDK additionally exports `TruthIDRequester`, with no equivalent in the other three — see [Dart reference](https://masterlxz.github.io/truthid/docs/sdk/dart#truthidrequester-cross-device-requester).
+The Dart SDK additionally exports `TruthIDRequester`, with no equivalent in the other three — see [Dart reference](https://arven-labs.github.io/truthid/docs/sdk/dart#truthidrequester-cross-device-requester).
 
 ---
 

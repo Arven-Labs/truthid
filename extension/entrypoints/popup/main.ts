@@ -48,7 +48,7 @@ const DEAD_DROP_RESOLVED_MESSAGE = 'truthid-dead-drop-resolved';
 // Points at the manual-install section, not the .zip directly — there's no
 // real auto-update for a "Load unpacked" extension (see src/updateCheck.ts),
 // so the banner needs the reinstall steps, not just a file.
-const UPDATE_INSTRUCTIONS_URL = 'https://masterlxz.github.io/truthid/#extension';
+const UPDATE_INSTRUCTIONS_URL = 'https://arven-labs.github.io/truthid/#extension';
 const HOST_PERMISSION: chrome.permissions.Permissions = {
   origins: ['http://*/*'],
 };

@@ -1,59 +1,31 @@
-// Desktop installers and the browser extension package, hosted as GitHub
-// Release assets (v2.2.0). Filenames embed the app version — when a newer
-// tag is cut with a different version, these need updating by hand (Tauri's
-// bundler names installers after tauri.conf.json's productName + version,
-// so there's no stable "latest" filename to link against). Confirmed on the
-// v2.0.0 release: productName changed from the old "tauri-app" default to
-// "TruthID" sometime after v1.0.0 was built, which is why the v1.0.0 assets
-// were named "tauri-app_1.0.0_..." — not because of package.json's `name`
-// field, as originally assumed when this file was written for P57.
-const REPO = "masterlxz/truthid";
-const TAG = "v2.2.0";
+// Desktop installers, APK and the browser extension package, hosted as
+// GitHub Release assets. The URLs live in releases.generated.json, produced
+// by scripts/gen-releases.mjs (run by deploy-docs.yml on every release), so
+// nothing here needs editing when a new version is cut. Each installer comes
+// from the newest release that contains it — Desktop, Mobile and the
+// extension don't always ship together.
+import generated from "./releases.generated.json";
 
-function assetUrl(filename: string): string {
-  return `https://github.com/${REPO}/releases/download/${TAG}/${filename}`;
-}
+const { urls } = generated;
 
 export const desktopDownloads = {
-  linux: {
-    deb: assetUrl("TruthID_2.2.0_amd64.deb"),
-    appImage: assetUrl("TruthID_2.2.0_amd64.AppImage"),
-    rpm: assetUrl("TruthID-2.2.0-1.x86_64.rpm"),
-  },
-  windows: {
-    exe: assetUrl("TruthID_2.2.0_x64-setup.exe"),
-    msi: assetUrl("TruthID_2.2.0_x64_en-US.msi"),
-  },
-  macos: {
-    // Apple Silicon only — the macos-latest CI runner doesn't produce an
-    // Intel build.
-    dmg: assetUrl("TruthID_2.2.0_aarch64.dmg"),
-  },
-  android: {
-    // P86 corrigido (coinbase_wallet_sdk vendorizado, ver PENDING.md) —
-    // build do Mobile confirmado no CI real na tag v2.2.1 (Desktop nela é
-    // idêntico ao v2.2.0, TAG acima continua sendo a fonte certa pros
-    // instaladores Desktop/extensão). Não usa TAG porque o Mobile e o
-    // Desktop não saem sempre juntos no mesmo release.
-    apk: `https://github.com/${REPO}/releases/download/v2.2.1/app-release.apk`,
-  },
+  linux: { deb: urls.deb, appImage: urls.appImage, rpm: urls.rpm },
+  windows: { exe: urls.exe, msi: urls.msi },
+  // Apple Silicon only — the macos-latest CI runner doesn't produce an
+  // Intel build.
+  macos: { dmg: urls.dmg },
+  android: { apk: urls.apk },
 };
 
-// Extension version stayed at 2.0.0 in the v2.2.0 release too — nada em
-// extension/ mudou desde o v2.1.0, então extension/package.json não foi
-// rebuildado/republicado (o build-extension job ainda anexa o mesmo .zip
-// de novo a cada tag, então o asset existe no v2.2.0 com o mesmo nome).
-export const extensionDownloadUrl = assetUrl(
-  "truthid-vault-extension-2.0.0-chrome.zip",
-);
+export const extensionDownloadUrl = urls.extension;
 
-export const releasePageUrl = `https://github.com/${REPO}/releases/tag/${TAG}`;
+export const releasePageUrl = generated.releasePageUrl;
 
 // APT repository (project/ROADMAP.md, "Instaladores nativos", Sessão 217) —
 // unlike the URLs above, not tied to TAG: deploy-docs.yml remounts /apt/
 // from the latest published release on every deploy, so this path stays
 // stable across versions.
 export const aptKeyringUrl =
-  "https://masterlxz.github.io/truthid/apt/truthid-archive-keyring.gpg";
+  "https://arven-labs.github.io/truthid/apt/truthid-archive-keyring.gpg";
 export const aptSourceLine =
-  "deb [signed-by=/usr/share/keyrings/truthid-archive-keyring.gpg] https://masterlxz.github.io/truthid/apt stable main";
+  "deb [signed-by=/usr/share/keyrings/truthid-archive-keyring.gpg] https://arven-labs.github.io/truthid/apt stable main";

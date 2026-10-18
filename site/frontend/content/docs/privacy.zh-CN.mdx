@@ -39,7 +39,7 @@ TruthID 是由 [masterlxz](https://github.com/masterlxz) 以 MIT 许可证发布
 
 **你配置的固定(pinning)服务。** 在保险库设置中,你可以添加自选的 IPFS 固定服务(例如 Pinata 或 Kubo 节点)。应用会把加密的保险库数据块以及你输入的 API 密钥或令牌发送给它;该密钥保存在你设备的安全存储中,绝不会发送到其他任何地方。项目不选择、不运营任何固定服务,也不从中接收数据,你所选的服务能看到你的 IP 地址和加密内容。
 
-**钱包连接(移动端)。** 如果你通过连接外部钱包来创建或管理身份,移动应用会通过 Reown AppKit 库使用 WalletConnect。配对过程以及你批准的请求会经由 Reown/WalletConnect 中继及其钱包目录传递,它们能看到你的 IP 地址、已连接的钱包地址,以及转发给你钱包的交易或签名请求。应用使用项目 ID 以及元数据 `TruthID` / `masterlxz.github.io/truthid` 向该服务表明身份。只有在你使用钱包连接流程时才会发生这种情况。
+**钱包连接(移动端)。** 如果你通过连接外部钱包来创建或管理身份,移动应用会通过 Reown AppKit 库使用 WalletConnect。配对过程以及你批准的请求会经由 Reown/WalletConnect 中继及其钱包目录传递,它们能看到你的 IP 地址、已连接的钱包地址,以及转发给你钱包的交易或签名请求。应用使用项目 ID 以及元数据 `TruthID` / `arven-labs.github.io/truthid` 向该服务表明身份。只有在你使用钱包连接流程时才会发生这种情况。
 
 **更新。** 应用会检查 `github.com/masterlxz/truthid` 的最新发布版本(GitHub releases API)以获知新版本。GitHub 能看到你的 IP 地址和应用版本。
 
