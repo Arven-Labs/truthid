@@ -201,6 +201,20 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P102 — Onboarding: o primeiro uso real (2026-10-18) bateu em 7 pontos de atrito seguidos — 💡 levantamento, nada corrigido além do P99/P101
+
+**Origem:** o dono do projeto instalou o app no Arch (desktop) e no Android (mobile) pela primeira vez como usuário e comentou: "tá muito burocrático, temos que simplificar isso depois". Cada item abaixo foi visto de verdade nessa sessão.
+
+1. **Carteira Arweave obrigatória antes da primeira publicação (e do celular escrever).** Marcar um celular como "can-write" só altera o cofre local do desktop (`vault_set_device_permission`) e deixa uma mudança pendente; quem a publica é o desktop, que precisa de carteira Arweave **com AR**. Enquanto isso o celular fica somente leitura. Para o usuário isso é: gerar carteira, comprar AR, depositar, publicar, só então usar o celular. Ideias a avaliar (não verificadas): custo/benefício de um bundler com faixa gratuita pra uploads pequenos; publicar a permissão sem exigir AR do usuário; um passo de onboarding guiado em vez de descobrir o requisito na hora.
+2. **Entrega da chave do cofre falha em silêncio no pareamento.** `PairDevice.tsx` cifra a vault key pro novo device dentro de um `try/catch` que engole o erro ("pairing succeeds without vault key"); o aparelho fica registrado com `deviceVaultKeys` vazio (0 bytes, confirmado on-chain). Correção sugerida: avisar ou bloquear quando a chave não puder ser entregue.
+3. **Mensagem enganosa no Mobile.** "Vault key not available... No need to re-pair — just try again" aparece também quando a chave on-chain está vazia; nesse caso "Try again" nunca resolve — o caminho é "Redistribute vault key" no Desktop. A tela deveria dizer isso.
+4. **Arquivos de root em `~/.truthid` (resto do Docker de dev) quebram o app.** `vault.key` (0600, root) dá `Permission denied (os error 13)` e, como o fallback em arquivo lança erro em vez de seguir, nem a cifra da vault key nem nada que dependa dela funciona; `device.key` ficou 0644. Além disso o banner de "chaves em texto plano" aparece só por existirem esses arquivos. Correção sugerida: tratar EACCES com mensagem clara (dizendo o `chown` necessário) em vez de erro cru.
+5. **Keyring indisponível não é diagnosticado.** No KDE com KWallet desligado (`Enabled=false` em `kwalletrc`) o app cai no arquivo em texto plano; o aviso cita "Secret Service" mas não diz como religar. Sugestão: detectar e orientar por distro/DE.
+6. **Chave do Pimlico por aparelho.** O APK/instalador sai sem chave; o usuário precisa criar conta no Pimlico e colar a chave em cada dispositivo. Sugestão: passo de onboarding explicando isso na primeira abertura.
+7. **Ordem das etapas não é guiada.** Criar identidade no PC → keyring → Pimlico → parear celular → entregar vault key → carteira Arweave → permissão. Nenhuma tela mostra "falta isso". Sugestão: checklist de onboarding com o que falta.
+
+**Já resolvido na mesma sessão:** P99 (AppImage não abria no Arch/Wayland) e P101 (spinner infinito no Mobile para identidade antiga). Relacionado: P100 (publicar com assinatura e pagamento no celular), que ataca o item 1.
+
 ### P100 — Ideia: publicar no Arweave pelo Desktop com a assinatura (e o pagamento) feitos no celular, via QR — 💡 ideia, não iniciada (2026-10-18)
 
 **Origem:** o dono do projeto, ao planejar importar o Bitwarden, queria gerar a carteira Arweave no celular e importar no PC sem copiar a chave. Hoje a carteira Arweave é **local de cada aparelho** (keyring) e de propósito **não** viaja no vault sincronizado (`splice_arweave_wallet_into_export`, `lib.rs`): quem publica precisa ter a carteira no próprio aparelho, e o Desktop exige uma carteira configurada e com saldo (`arweave_publish`). O único jeito de usar a mesma carteira nos dois é o backup exportado (`arweave_wallet_jwk` no envelope), que copia a chave privada pro PC. Decisão do dono do projeto por ora: fazer tudo no celular.
