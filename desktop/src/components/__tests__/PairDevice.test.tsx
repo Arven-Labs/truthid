@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PairDevice } from "../PairDevice";
 
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(),
+}));
+
 vi.mock("wagmi", () => ({
   useAccount: vi.fn(),
   useWriteContract: vi.fn(),
@@ -81,11 +85,13 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { invoke } from "@tauri-apps/api/core";
 import { useWalletModal } from "../../contexts/WalletModalContext";
 import { useIdentity } from "../../contexts/IdentityContext";
 
 // Valid 40-hex Ethereum address (all lowercase passes isAddress)
 const VALID_ADDRESS = "0x1111111111111111111111111111111111111111";
+const ENCRYPTION_KEY = "0x04" + "ab".repeat(64);
 const SMART_ACCOUNT_ADDRESS = "0x3333333333333333333333333333333333333333" as const;
 
 function setupMocks({
@@ -215,9 +221,11 @@ describe("PairDevice", () => {
 
   it("calls commitDevice through the smart account's execute when wallet is connected and inputs are valid", async () => {
     const { mockWriteContract } = setupMocks();
+    vi.mocked(invoke).mockResolvedValue(btoa("encrypted-vault-key"));
     render(<PairDevice onDeviceRegistered={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "+ Add device" }));
     await userEvent.type(screen.getByPlaceholderText("0x..."), VALID_ADDRESS);
+    await userEvent.type(screen.getByPlaceholderText("0x03... or 0x04..."), ENCRYPTION_KEY);
     await userEvent.type(screen.getByPlaceholderText("ex: iPhone 15 Pro"), "My Phone");
     await userEvent.click(screen.getByRole("button", { name: "Register device" }));
 
@@ -234,9 +242,11 @@ describe("PairDevice", () => {
 
   it("re-enables Register device after a commit/reveal error, instead of staying stuck disabled", async () => {
     const { mockWriteContract } = setupMocks();
+    vi.mocked(invoke).mockResolvedValue(btoa("encrypted-vault-key"));
     const { rerender } = render(<PairDevice onDeviceRegistered={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "+ Add device" }));
     await userEvent.type(screen.getByPlaceholderText("0x..."), VALID_ADDRESS);
+    await userEvent.type(screen.getByPlaceholderText("0x03... or 0x04..."), ENCRYPTION_KEY);
     await userEvent.type(screen.getByPlaceholderText("ex: iPhone 15 Pro"), "My Phone");
     await userEvent.click(screen.getByRole("button", { name: "Register device" }));
 
@@ -254,5 +264,67 @@ describe("PairDevice", () => {
     rerender(<PairDevice onDeviceRegistered={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Register device" })).toBeEnabled();
+  });
+
+  // ── Vault key (P102): nunca registrar um device sem acesso ao Vault em silêncio ──
+
+  async function fillForm({ withKey }: { withKey: boolean }) {
+    await userEvent.click(screen.getByRole("button", { name: "+ Add device" }));
+    await userEvent.type(screen.getByPlaceholderText("0x..."), VALID_ADDRESS);
+    if (withKey) {
+      await userEvent.type(screen.getByPlaceholderText("0x03... or 0x04..."), ENCRYPTION_KEY);
+    }
+    await userEvent.type(screen.getByPlaceholderText("ex: iPhone 15 Pro"), "My Phone");
+  }
+
+  it("encrypts the vault key BEFORE sending the commit transaction", async () => {
+    const { mockWriteContract } = setupMocks();
+    vi.mocked(invoke).mockResolvedValue(btoa("encrypted-vault-key"));
+    render(<PairDevice onDeviceRegistered={vi.fn()} />);
+    await fillForm({ withKey: true });
+    await userEvent.click(screen.getByRole("button", { name: "Register device" }));
+
+    expect(invoke).toHaveBeenCalledWith("encrypt_vault_key_for_device", {
+      devicePubkeyHex: ENCRYPTION_KEY,
+    });
+    expect(mockWriteContract).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("without an encryption key: sends nothing and explains why", async () => {
+    const { mockWriteContract } = setupMocks();
+    render(<PairDevice onDeviceRegistered={vi.fn()} />);
+    await fillForm({ withKey: false });
+    await userEvent.click(screen.getByRole("button", { name: "Register device" }));
+
+    expect(mockWriteContract).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("without access to the Vault");
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+
+  it("encryption fails: sends nothing and shows the real error", async () => {
+    const { mockWriteContract } = setupMocks();
+    vi.mocked(invoke).mockRejectedValue("Permission denied (os error 13)");
+    render(<PairDevice onDeviceRegistered={vi.fn()} />);
+    await fillForm({ withKey: true });
+    await userEvent.click(screen.getByRole("button", { name: "Register device" }));
+
+    expect(mockWriteContract).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Permission denied (os error 13)");
+  });
+
+  it("after ticking 'register anyway', pairs without the vault key", async () => {
+    const { mockWriteContract } = setupMocks();
+    vi.mocked(invoke).mockRejectedValue("no wallet-derived vault key available");
+    render(<PairDevice onDeviceRegistered={vi.fn()} />);
+    await fillForm({ withKey: true });
+    await userEvent.click(screen.getByRole("button", { name: "Register device" }));
+    expect(mockWriteContract).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: "Register device" }));
+
+    expect(mockWriteContract).toHaveBeenCalledOnce();
   });
 });

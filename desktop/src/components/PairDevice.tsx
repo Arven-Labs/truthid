@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, encodePacked, encodeFunctionData, isAddress, type Hex } from "viem";
@@ -37,6 +37,18 @@ export function PairDevice({ onDeviceRegistered }: {
   const [addressInput, setAddressInput] = useState("");
   const [encryptionKey, setEncryptionKey] = useState("");
   const [labelInput, setLabelInput] = useState("");
+
+  // A vault key é cifrada pro novo device ANTES do commit (não depois, como
+  // era): se a cifra falhar, nenhuma transação foi enviada e o usuário vê o
+  // motivo. Antes, o erro era engolido e o device ficava registrado com
+  // `deviceVaultKeys` vazio — sem acesso ao Vault e sem nenhum aviso (achado
+  // real no primeiro uso, P102). Parear sem entregar a chave só acontece se o
+  // usuário marcar isso de propósito (dá pra enviar depois, em "Redistribute
+  // vault key").
+  const [vaultKeyProblem, setVaultKeyProblem] = useState<string | null>(null);
+  const [allowNoVaultKey, setAllowNoVaultKey] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const encryptedVaultKeyRef = useRef<Hex>("0x");
 
   // Registro em 2 passos (commit-reveal) — esconde o devicePubKey até a
   // confirmação, impedindo front-running (ver auditoria, achado #7).
@@ -82,20 +94,7 @@ export function PairDevice({ onDeviceRegistered }: {
       return;
     setRegisterPhase("registering");
     const timer = setTimeout(async () => {
-      // Encrypt vault key for the new device (ECIES)
-      let encryptedVaultKey: Hex = "0x";
-      if (encryptionKey) {
-        try {
-          const b64 = await invoke<string>("encrypt_vault_key_for_device", {
-            devicePubkeyHex: encryptionKey,
-          });
-          // Convert base64 blob to hex for the contract call
-          const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-          encryptedVaultKey = `0x${Array.from(raw, (b) => b.toString(16).padStart(2, "0")).join("")}` as Hex;
-        } catch {
-          // Non-critical: pairing succeeds without vault key
-        }
-      }
+      const encryptedVaultKey = encryptedVaultKeyRef.current;
 
       const { dest, value, func } = buildAccountCalls([
         {
@@ -144,11 +143,44 @@ export function PairDevice({ onDeviceRegistered }: {
     setLabelInput("");
     setRegisterPhase("idle");
     setSalt(null);
+    setVaultKeyProblem(null);
+    setAllowNoVaultKey(false);
+    setIsPreparing(false);
+    encryptedVaultKeyRef.current = "0x";
   }
 
-  function handleRegister() {
+  // Devolve a vault key cifrada (hex) pro device, ou "0x" se o usuário
+  // aceitou parear sem ela. `null` = parou aqui e já mostrou o motivo.
+  async function prepareEncryptedVaultKey(): Promise<Hex | null> {
+    let problem: string | null = null;
+    if (!encryptionKey) {
+      problem = t("pairDevice.vaultKeyMissing");
+    } else {
+      try {
+        const b64 = await invoke<string>("encrypt_vault_key_for_device", {
+          devicePubkeyHex: encryptionKey,
+        });
+        const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        return `0x${Array.from(raw, (b) => b.toString(16).padStart(2, "0")).join("")}` as Hex;
+      } catch (e) {
+        problem = t("pairDevice.vaultKeyFailed", { message: String(e) });
+      }
+    }
+    if (allowNoVaultKey) return "0x";
+    setVaultKeyProblem(problem);
+    return null;
+  }
+
+  async function handleRegister() {
     if (!isConnected) { openConnectModal(); return; }
     if (!smartAccountAddress || !isAddress(addressInput) || !labelInput) return;
+
+    setVaultKeyProblem(null);
+    setIsPreparing(true);
+    const encrypted = await prepareEncryptedVaultKey();
+    setIsPreparing(false);
+    if (encrypted === null) return;
+    encryptedVaultKeyRef.current = encrypted;
 
     resetCommit();
     resetRegister();
@@ -237,6 +269,19 @@ export function PairDevice({ onDeviceRegistered }: {
         />
       </div>
 
+      {vaultKeyProblem && (
+        <div className="error-text" role="alert">
+          <p style={{ margin: "0 0 0.5rem" }}>{vaultKeyProblem}</p>
+          <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+            <input
+              type="checkbox"
+              checked={allowNoVaultKey}
+              onChange={(e) => setAllowNoVaultKey(e.target.checked)}
+            />
+            <span>{t("pairDevice.allowNoVaultKey")}</span>
+          </label>
+        </div>
+      )}
       {isPairError && (
         <p className="error-text">
           {pairError?.message?.includes("rejected_by_user")
@@ -247,7 +292,7 @@ export function PairDevice({ onDeviceRegistered }: {
       <div className="actions-row">
         <button
           onClick={handleRegister}
-          disabled={!isAddress(addressInput) || !labelInput || registerPhase !== "idle"}
+          disabled={!isAddress(addressInput) || !labelInput || registerPhase !== "idle" || isPreparing}
         >
           {registerPhase === "committing" && isRegisterPendingAny
             ? t("pairDevice.confirmWallet1")

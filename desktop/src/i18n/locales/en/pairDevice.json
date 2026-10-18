@@ -4,7 +4,7 @@
   "instructions": "On your phone, open <0>Devices → Show QR to pair</0> and paste the displayed data here:",
   "deviceAddressLabel": "Device address",
   "invalidAddress": "Invalid address.",
-  "encryptionKeyLabel": "Encryption key (optional)",
+  "encryptionKeyLabel": "Encryption key",
   "deviceNameLabel": "Device name",
   "rejectedOnLedger": "Transaction rejected on Ledger.",
   "errorPrefix": "Error: {{message}}",
@@ -13,5 +13,8 @@
   "confirmWallet2": "Confirm in wallet (2/2)...",
   "waitingNetwork2": "Waiting for network (2/2)...",
   "registerDevice": "Register device",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "vaultKeyMissing": "This device has no encryption key, so it would be registered without access to the Vault. Paste the encryption key shown on the phone (Devices → Show encryption key).",
+  "vaultKeyFailed": "Could not encrypt the vault key for this device: {{message}}",
+  "allowNoVaultKey": "Register anyway, without Vault access (you can send the key later with \"Redistribute vault key\")"
 }
