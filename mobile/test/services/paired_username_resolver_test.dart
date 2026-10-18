@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:web3dart/web3dart.dart';
 
 import 'package:truthid_mobile/services/blockchain_service.dart';
 import 'package:truthid_mobile/services/local_storage_service.dart';
@@ -79,5 +82,103 @@ void main() {
 
     expect(result, isNull);
     verifyNever(() => mockStorage.savePairedUsername(any()));
+  });
+
+  test('scan que nunca termina: estoura o teto e devolve null', () async {
+    when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+    // Future que nunca completa = scan de identidade antiga preso em RPC lento.
+    when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+        .thenAnswer((_) => Completer<String?>().future);
+
+    final result = await resolvePairedUsername(
+      storage: mockStorage,
+      blockchain: mockBlockchain,
+      identityId: '1',
+      scanTimeout: const Duration(milliseconds: 50),
+    );
+
+    expect(result, isNull);
+    verifyNever(() => mockStorage.savePairedUsername(any()));
+  });
+
+  group('verifyAndSavePairedUsername', () {
+    IdentityInfo info(int id) => IdentityInfo(
+          id: BigInt.from(id),
+          controller: EthereumAddress.fromHex(
+              '0x1234567890123456789012345678901234567890'),
+        );
+
+    test('id on-chain bate com o pareado: salva sem o @', () async {
+      when(() => mockBlockchain.getIdentityByUsername('alice'))
+          .thenAnswer((_) async => info(1));
+      when(() => mockStorage.savePairedUsername('alice')).thenAnswer((_) async {});
+
+      final r = await verifyAndSavePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        username: '  @alice ',
+      );
+
+      expect(r, UsernameVerification.confirmed);
+      verify(() => mockStorage.savePairedUsername('alice')).called(1);
+    });
+
+    test('username de outra identidade: não salva', () async {
+      when(() => mockBlockchain.getIdentityByUsername('bob'))
+          .thenAnswer((_) async => info(2));
+
+      final r = await verifyAndSavePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        username: 'bob',
+      );
+
+      expect(r, UsernameVerification.wrongIdentity);
+      verifyNever(() => mockStorage.savePairedUsername(any()));
+    });
+
+    test('username inexistente: notFound, não salva', () async {
+      when(() => mockBlockchain.getIdentityByUsername('ghost'))
+          .thenAnswer((_) async => null);
+
+      final r = await verifyAndSavePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        username: 'ghost',
+      );
+
+      expect(r, UsernameVerification.notFound);
+      verifyNever(() => mockStorage.savePairedUsername(any()));
+    });
+
+    test('campo vazio: notFound sem consultar a chain', () async {
+      final r = await verifyAndSavePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        username: ' @ ',
+      );
+
+      expect(r, UsernameVerification.notFound);
+      verifyNever(() => mockBlockchain.getIdentityByUsername(any()));
+    });
+
+    test('RPC falhou: unreachable, não salva', () async {
+      when(() => mockBlockchain.getIdentityByUsername('alice'))
+          .thenThrow(Exception('all RPCs failed'));
+
+      final r = await verifyAndSavePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        username: 'alice',
+      );
+
+      expect(r, UsernameVerification.unreachable);
+      verifyNever(() => mockStorage.savePairedUsername(any()));
+    });
   });
 }

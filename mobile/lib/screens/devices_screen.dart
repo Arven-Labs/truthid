@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../l10n/l10n_extensions.dart';
@@ -37,6 +39,20 @@ class _DevicesScreenState extends State<DevicesScreen> {
   String? _pairedUsername;
   String? _encryptionPubKey;
   bool _isLoading = true;
+  // O @username é resolvido em segundo plano: o scan on-chain pode levar muito
+  // tempo pra uma identidade antiga, e a tela não pode ficar num spinner até
+  // ele acabar. Se não resolver, o usuário informa o @username à mão.
+  bool _resolvingUsername = false;
+  bool _usernameScanDone = false;
+  bool _verifyingUsername = false;
+  UsernameVerification? _verifyResult;
+  final _usernameCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _usernameCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -50,46 +66,168 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Future<void> _reload() async {
     setState(() => _isLoading = true);
 
-    final address = await _keyService.getDeviceAddress();
-    var identityId = await _storage.getPairedIdentityId();
+    try {
+      final address = await _keyService.getDeviceAddress();
+      var identityId = await _storage.getPairedIdentityId();
 
-    final device = await _blockchain.getDevice(address);
+      final device = await _blockchain.getDevice(address);
 
-    if (device != null && !device.revoked) {
-      if (identityId == null) {
-        // Auto-descoberta: device registrado on-chain mas não salvo localmente.
-        identityId = device.identityId.toString();
-        await _storage.savePairedIdentity(identityId);
+      if (device != null && !device.revoked) {
+        if (identityId == null) {
+          // Auto-descoberta: device registrado on-chain mas não salvo localmente.
+          identityId = device.identityId.toString();
+          await _storage.savePairedIdentity(identityId);
+        }
+      } else if (identityId != null) {
+        // Device revogado ou removido — limpar storage
+        await _storage.clearPairedIdentity();
+        identityId = null;
       }
-    } else if (identityId != null) {
-      // Device revogado ou removido — limpar storage
-      await _storage.clearPairedIdentity();
-      identityId = null;
-    }
 
-    // Sempre passa pelo helper compartilhado, não só na auto-descoberta —
-    // achado do /code-review high (M8): a versão inline anterior só
-    // resolvia o username quando identityId tinha acabado de ser
-    // descoberto, então um identityId já persistido de uma sessão anterior
-    // cujo username nunca resolveu (falha transiente de
-    // getUsernameForIdentity) nunca era tentado de novo. resolvePairedUsername
-    // já cobre cache + retry + try/catch (ver Sessão 135).
-    String? username;
-    if (identityId != null) {
-      username = await resolvePairedUsername(
-        storage: _storage,
-        blockchain: _blockchain,
-        identityId: identityId,
+      // Só o cache aqui (rápido). A resolução on-chain do username roda em
+      // segundo plano abaixo — antes ela era aguardada neste ponto e, pra uma
+      // identidade antiga, segurava o spinner por muitos minutos (todas as
+      // abas passam por esta tela primeiro).
+      final cachedUsername =
+          identityId != null ? await _storage.getPairedUsername() : null;
+
+      if (!mounted) return;
+      setState(() {
+        _deviceAddress = address;
+        _pairedIdentityId = identityId;
+        _pairedUsername = cachedUsername;
+      });
+
+      if (identityId != null && cachedUsername == null) {
+        unawaited(_resolveUsernameInBackground(identityId));
+      }
+    } finally {
+      // Sem isto, uma exceção em qualquer passo acima deixava o spinner
+      // pra sempre (sem nenhum erro visível no app de release).
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Sempre passa pelo helper compartilhado, não só na auto-descoberta —
+  // achado do /code-review high (M8): um identityId já persistido de uma
+  // sessão anterior cujo username nunca resolveu nunca era tentado de novo.
+  // resolvePairedUsername já cobre cache + teto de tempo + try/catch.
+  Future<void> _resolveUsernameInBackground(String identityId) async {
+    setState(() {
+      _resolvingUsername = true;
+      _usernameScanDone = false;
+    });
+    final username = await resolvePairedUsername(
+      storage: _storage,
+      blockchain: _blockchain,
+      identityId: identityId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _resolvingUsername = false;
+      _usernameScanDone = true;
+      if (username != null) _pairedUsername = username;
+    });
+  }
+
+  Future<void> _confirmUsername() async {
+    final identityId = _pairedIdentityId;
+    if (identityId == null || _verifyingUsername) return;
+    setState(() {
+      _verifyingUsername = true;
+      _verifyResult = null;
+    });
+    final handle = _usernameCtrl.text.trim().replaceFirst(RegExp(r'^@'), '');
+    final result = await verifyAndSavePairedUsername(
+      storage: _storage,
+      blockchain: _blockchain,
+      identityId: identityId,
+      username: handle,
+    );
+    if (!mounted) return;
+    setState(() {
+      _verifyingUsername = false;
+      _verifyResult = result;
+      if (result == UsernameVerification.confirmed) _pairedUsername = handle;
+    });
+  }
+
+  Widget _buildUsernameCard() {
+    final l10n = context.l10n;
+    final error = switch (_verifyResult) {
+      UsernameVerification.notFound => l10n.devicesScreenUsernameNotFound,
+      UsernameVerification.wrongIdentity => l10n.devicesScreenUsernameWrongIdentity,
+      UsernameVerification.unreachable => l10n.devicesScreenUsernameUnreachable,
+      _ => null,
+    };
+
+    // Ainda procurando automaticamente: só um aviso discreto, sem formulário.
+    if (_resolvingUsername && !_usernameScanDone) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.devicesScreenUsernameSearching,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
       );
     }
 
-    if (!mounted) return;
-    setState(() {
-      _deviceAddress = address;
-      _pairedIdentityId = identityId;
-      _pairedUsername = username;
-      _isLoading = false;
-    });
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.devicesScreenUsernameTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.devicesScreenUsernameBody,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _usernameCtrl,
+              autocorrect: false,
+              enableSuggestions: false,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _confirmUsername(),
+              decoration: InputDecoration(
+                labelText: l10n.devicesScreenUsernameFieldLabel,
+                errorText: error,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: _verifyingUsername ? null : _confirmUsername,
+                child: _verifyingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.devicesScreenUsernameConfirmButton),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _showEncryptionKey() async {
@@ -168,6 +306,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_pairedIdentityId != null && _pairedUsername == null)
+            _buildUsernameCard(),
+
           // ── Card do device ──────────────────────────────────────────────
           Card(
             child: Padding(

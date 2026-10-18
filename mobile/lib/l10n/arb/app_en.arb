@@ -128,6 +128,38 @@
       }
     }
   },
+  "devicesScreenUsernameTitle": "Couldn't find your @username automatically",
+  "@devicesScreenUsernameTitle": {
+    "description": "Heading of the card shown on the Devices screen when the paired @username could not be resolved automatically."
+  },
+  "devicesScreenUsernameBody": "Enter your @username to confirm it on-chain. It is only saved if it matches the identity paired on this device.",
+  "@devicesScreenUsernameBody": {
+    "description": "Explains the manual @username entry: it is verified on-chain against the paired identity before being saved."
+  },
+  "devicesScreenUsernameFieldLabel": "Your @username",
+  "@devicesScreenUsernameFieldLabel": {
+    "description": "Label of the text field where the user types their @username."
+  },
+  "devicesScreenUsernameConfirmButton": "Confirm",
+  "@devicesScreenUsernameConfirmButton": {
+    "description": "Button that verifies the typed @username on-chain."
+  },
+  "devicesScreenUsernameSearching": "Looking up your @username…",
+  "@devicesScreenUsernameSearching": {
+    "description": "Shown while the typed @username is being verified."
+  },
+  "devicesScreenUsernameNotFound": "No identity with that @username.",
+  "@devicesScreenUsernameNotFound": {
+    "description": "Error: no identity exists with the typed @username."
+  },
+  "devicesScreenUsernameWrongIdentity": "That @username belongs to a different identity than the one paired on this device.",
+  "@devicesScreenUsernameWrongIdentity": {
+    "description": "Error: the typed @username exists but belongs to a different identity than the paired one."
+  },
+  "devicesScreenUsernameUnreachable": "Couldn't reach the network. Try again.",
+  "@devicesScreenUsernameUnreachable": {
+    "description": "Error: the network/RPC could not be reached while verifying the @username."
+  },
   "devicesScreenEncryptionKeyLabel": "Encryption key",
   "@devicesScreenEncryptionKeyLabel": {
     "description": "Small muted section label above the encryption public key on the Devices screen."

@@ -89,6 +89,16 @@ class BlockchainService {
     'https://base-rpc.publicnode.com',
     'https://base.drpc.org',
   ];
+  // eth_getLogs: o plano grátis da `drpc` rejeita (400) e a `mainnet.base.org`
+  // limita (429) esse método com frequência — medido contra as 3 em
+  // 2026-10-18. Tentar sempre nessa ordem fazia cada chunk do scan de
+  // `getUsernameForIdentity` gastar tentativas nas duas antes de cair na
+  // publicnode, que responde. Pros demais métodos a ordem original vale.
+  static const _logsRpcUrls = [
+    'https://base-rpc.publicnode.com',
+    'https://mainnet.base.org',
+    'https://base.drpc.org',
+  ];
   static const _rpcTimeout = Duration(seconds: 10);
 
   // Sessão 122: um scan de histórico completo da aba Wallet dispara volume
@@ -226,7 +236,7 @@ class BlockchainService {
   Future<dynamic> _rpcCall(String method, List<dynamic> params) async {
     final errors = <String>[];
     for (var round = 0; round < _rpcRetryRounds; round++) {
-      for (final url in _rpcUrls) {
+      for (final url in method == 'eth_getLogs' ? _logsRpcUrls : _rpcUrls) {
         try {
           return await _rpcCallOnce(url, method, params).timeout(_rpcTimeout);
         } catch (e) {
@@ -326,6 +336,11 @@ class BlockchainService {
   // pouco tempo) em 1-2 chunks.
   static const _recentLookbackChunks = 50;
 
+  // Chunks de eth_getLogs em voo ao mesmo tempo na fase 2 do scan de
+  // `getUsernameForIdentity` (identidade antiga). Baixo de propósito: os RPCs
+  // públicos limitam por taxa, e mais paralelismo só troca lentidão por 429.
+  static const _scanParallelism = 5;
+
   // Resolve o @username da identidade via eth_getLogs no evento IdentityCreated.
   // O contrato não tem um getter id→username, então a única fonte é o log.
   //
@@ -387,23 +402,35 @@ class BlockchainService {
     // recentWindowStart - 1] (o que a fase 1 ainda não cobriu). Só executa
     // se recentWindowStart > identityRegistryDeployBlock — perto do deploy,
     // a fase 1 já cobre a chain inteira e este loop não roda.
+    // Em lotes de _scanParallelism chunks ao mesmo tempo: a fase 2 pode
+    // precisar de ~1.400 chunks (identidade antiga), e em sequência isso
+    // passava de dezenas de minutos. Dentro do lote, procura na ordem dos
+    // blocos pra devolver o mesmo resultado que a versão sequencial.
     var fromBlock = identityRegistryDeployBlock;
     while (fromBlock < recentWindowStart) {
-      final chunkEnd = fromBlock + _maxLogRangeBlocks - 1 < recentWindowStart - 1
-          ? fromBlock + _maxLogRangeBlocks - 1
-          : recentWindowStart - 1;
-
-      final logs = await _fetchIdentityCreatedLogs(
-        eventTopic: eventTopic,
-        idTopic: idTopic,
-        fromBlock: fromBlock,
-        toBlock: chunkEnd,
-      );
-      if (logs != null && logs.isNotEmpty) {
-        return _decodeUsernameFromLog(logs.first as Map<String, dynamic>);
+      final ranges = <(int, int)>[];
+      var cursor = fromBlock;
+      while (cursor < recentWindowStart && ranges.length < _scanParallelism) {
+        final chunkEnd = cursor + _maxLogRangeBlocks - 1 < recentWindowStart - 1
+            ? cursor + _maxLogRangeBlocks - 1
+            : recentWindowStart - 1;
+        ranges.add((cursor, chunkEnd));
+        cursor = chunkEnd + 1;
       }
 
-      fromBlock = chunkEnd + 1;
+      final batch = await Future.wait(ranges.map((r) => _fetchIdentityCreatedLogs(
+            eventTopic: eventTopic,
+            idTopic: idTopic,
+            fromBlock: r.$1,
+            toBlock: r.$2,
+          )));
+      for (final logs in batch) {
+        if (logs != null && logs.isNotEmpty) {
+          return _decodeUsernameFromLog(logs.first as Map<String, dynamic>);
+        }
+      }
+
+      fromBlock = cursor;
     }
     return null;
   }

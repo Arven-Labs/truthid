@@ -128,6 +128,38 @@
       }
     }
   },
+  "devicesScreenUsernameTitle": "无法自动找到您的 @username",
+  "@devicesScreenUsernameTitle": {
+    "description": "Heading of the card shown on the Devices screen when the paired @username could not be resolved automatically."
+  },
+  "devicesScreenUsernameBody": "请输入您的 @username 以在链上确认。只有与此设备已配对的身份一致时才会保存。",
+  "@devicesScreenUsernameBody": {
+    "description": "Explains the manual @username entry: it is verified on-chain against the paired identity before being saved."
+  },
+  "devicesScreenUsernameFieldLabel": "您的 @username",
+  "@devicesScreenUsernameFieldLabel": {
+    "description": "Label of the text field where the user types their @username."
+  },
+  "devicesScreenUsernameConfirmButton": "确认",
+  "@devicesScreenUsernameConfirmButton": {
+    "description": "Button that verifies the typed @username on-chain."
+  },
+  "devicesScreenUsernameSearching": "正在查找您的 @username…",
+  "@devicesScreenUsernameSearching": {
+    "description": "Shown while the typed @username is being verified."
+  },
+  "devicesScreenUsernameNotFound": "没有使用该 @username 的身份。",
+  "@devicesScreenUsernameNotFound": {
+    "description": "Error: no identity exists with the typed @username."
+  },
+  "devicesScreenUsernameWrongIdentity": "该 @username 属于另一个身份，与此设备已配对的身份不同。",
+  "@devicesScreenUsernameWrongIdentity": {
+    "description": "Error: the typed @username exists but belongs to a different identity than the paired one."
+  },
+  "devicesScreenUsernameUnreachable": "无法连接网络，请重试。",
+  "@devicesScreenUsernameUnreachable": {
+    "description": "Error: the network/RPC could not be reached while verifying the @username."
+  },
   "devicesScreenEncryptionKeyLabel": "加密密钥",
   "@devicesScreenEncryptionKeyLabel": {
     "description": "Small muted section label above the encryption public key on the Devices screen."
