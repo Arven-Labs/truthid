@@ -50,6 +50,12 @@ jobs:
         working-directory: site/frontend
         run: npm ci
 
+      - name: Resolve installer URLs from GitHub Releases
+        working-directory: site/frontend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/gen-releases.mjs
+
       - name: Remove routes that need the Rails backend (signin, dashboard)
         working-directory: site/frontend
         run: rm -rf "app/[locale]/signin" "app/[locale]/dashboard"
