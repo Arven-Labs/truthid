@@ -26,6 +26,6 @@ export const releasePageUrl = generated.releasePageUrl;
 // from the latest published release on every deploy, so this path stays
 // stable across versions.
 export const aptKeyringUrl =
-  "https://masterlxz.github.io/truthid/apt/truthid-archive-keyring.gpg";
+  "https://arven-labs.github.io/truthid/apt/truthid-archive-keyring.gpg";
 export const aptSourceLine =
-  "deb [signed-by=/usr/share/keyrings/truthid-archive-keyring.gpg] https://masterlxz.github.io/truthid/apt stable main";
+  "deb [signed-by=/usr/share/keyrings/truthid-archive-keyring.gpg] https://arven-labs.github.io/truthid/apt stable main";

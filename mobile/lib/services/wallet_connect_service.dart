@@ -29,9 +29,9 @@ class WalletConnectService {
       metadata: const PairingMetadata(
         name: 'TruthID',
         description: 'Identidade descentralizada auto-custodiada',
-        url: 'https://masterlxz.github.io/truthid',
+        url: 'https://arven-labs.github.io/truthid',
         icons: [
-          'https://masterlxz.github.io/truthid/favicon.png',
+          'https://arven-labs.github.io/truthid/favicon.png',
         ],
         // Esquema dedicado (não o "truthid://" já usado por DeepLinkService)
         // pra evitar colisão: uma wallet devolvendo foco ao app depois de
