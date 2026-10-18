@@ -24,7 +24,7 @@ description: "主要的控制方应用 — 身份创建、Ledger、设备管理�
 
 ## Linux:AppImage 无法打开 [#linux-appimage]
 
-在部分使用 Wayland 和较新 Mesa 的发行版上(Arch 上出现过),AppImage 会立即退出,并提示 `Could not create default EGL display: EGL_BAD_PARAMETER`。AppImage 自带了 `libwayland-*` 库,与系统图形栈所期望的版本冲突。设置 `WEBKIT_DISABLE_DMABUF_RENDERER` 或 `GDK_BACKEND=x11` 无效。请解压 AppImage 并删除其中自带的 Wayland 库,让它使用系统自带的:
+2.2.3 及更早版本的 AppImage 自带了 `libwayland-*` 库,在部分使用 Wayland 和较新 Mesa 的发行版上(Arch 上出现过)会与系统图形栈冲突,应用会立即退出,并提示 `Could not create default EGL display: EGL_BAD_PARAMETER`。此问题已在 2.2.4 中修复 — 请下载最新的 AppImage。如果您停留在旧版本,请解压 AppImage 并删除其中自带的 Wayland 库,让它使用系统自带的:
 
 ```bash
 ./TruthID_<version>_amd64.AppImage --appimage-extract
@@ -33,7 +33,7 @@ rm ~/TruthID-app/usr/lib/libwayland-*.so*
 ~/TruthID-app/AppRun
 ```
 
-每个新版本都需要重复这一步。如果您的发行版提供原生软件包(`.deb`、`.rpm`),请优先使用。
+一旦您能打开 AppImage,其内置更新器会自动推送修复。如果您的发行版提供原生软件包(`.deb`、`.rpm`),同样可以避免此问题。
 
 ## 后续步骤
 

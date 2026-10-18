@@ -24,7 +24,7 @@ O desktop não tem código próprio de autofill ou de injeção em páginas web 
 
 ## Linux: o AppImage não abre [#linux-appimage]
 
-Em algumas distribuições com Wayland e um Mesa recente (visto no Arch), o AppImage fecha na hora com `Could not create default EGL display: EGL_BAD_PARAMETER`. O AppImage embute as próprias bibliotecas `libwayland-*`, que conflitam com as que a pilha gráfica do seu sistema espera. Definir `WEBKIT_DISABLE_DMABUF_RENDERER` ou `GDK_BACKEND=x11` não resolve. Extraia o AppImage e remova as bibliotecas Wayland embutidas para que ele use as do seu sistema:
+As versões do AppImage até a 2.2.3 embutiam as próprias bibliotecas `libwayland-*`, que conflitam com a pilha gráfica de algumas distribuições com Wayland e Mesa recente (visto no Arch). O app fechava na hora com `Could not create default EGL display: EGL_BAD_PARAMETER`. Isso foi corrigido na 2.2.4 — baixe o AppImage mais recente. Se você ficou preso numa versão mais antiga, extraia o AppImage e remova as bibliotecas Wayland embutidas para que ele use as do seu sistema:
 
 ```bash
 ./TruthID_<version>_amd64.AppImage --appimage-extract
@@ -33,7 +33,7 @@ rm ~/TruthID-app/usr/lib/libwayland-*.so*
 ~/TruthID-app/AppRun
 ```
 
-Repita isso a cada nova versão. Se a sua distribuição oferecer um pacote nativo (`.deb`, `.rpm`), prefira-o.
+O atualizador embutido do AppImage entrega a correção automaticamente assim que você conseguir abri-lo. Se a sua distribuição oferecer um pacote nativo (`.deb`, `.rpm`), ele também evita o problema.
 
 ## Próximos passos
 
