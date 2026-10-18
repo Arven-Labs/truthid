@@ -201,6 +201,22 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P100 — Ideia: publicar no Arweave pelo Desktop com a assinatura (e o pagamento) feitos no celular, via QR — 💡 ideia, não iniciada (2026-10-18)
+
+**Origem:** o dono do projeto, ao planejar importar o Bitwarden, queria gerar a carteira Arweave no celular e importar no PC sem copiar a chave. Hoje a carteira Arweave é **local de cada aparelho** (keyring) e de propósito **não** viaja no vault sincronizado (`splice_arweave_wallet_into_export`, `lib.rs`): quem publica precisa ter a carteira no próprio aparelho, e o Desktop exige uma carteira configurada e com saldo (`arweave_publish`). O único jeito de usar a mesma carteira nos dois é o backup exportado (`arweave_wallet_jwk` no envelope), que copia a chave privada pro PC. Decisão do dono do projeto por ora: fazer tudo no celular.
+
+**Ideia:** no momento do publish, o Desktop gera um QR (transporte LAN + dead-drop já existente) e o celular assina e paga a taxa com a carteira dele, sem a chave sair do celular.
+
+**Desenho provável:** a assinatura de transação Arweave só precisa do digest. O Desktop monta a transação com a chave pública da carteira do celular como `owner`, calcula o deep hash e manda pro celular; o celular mostra o custo, o usuário aprova (padrão de `sign_request_approval_screen`/`pin_approval_screen`) e devolve só a assinatura; o Desktop envia os dados/chunks. Reaproveita a assinatura delegada (`POST /truthid/v1/pin`, `sign` do Desktop↔Mobile).
+
+**Complicações a resolver:**
+1. **Várias assinaturas por publicação:** o vault por entrada (P87) publica um manifesto + uma transação por entrada alterada; um import grande do Bitwarden seriam dezenas de aprovações — precisa de assinatura em lote, numa aprovação só.
+2. **Custo na hora da assinatura:** o preço vem da rede; o celular precisa mostrar o total antes de aprovar.
+3. **Celular indisponível** (fora da rede, bateria): o publish do Desktop fica parado — precisa de mensagem clara e nova tentativa.
+4. Comparar com a alternativa já existente (copiar a carteira via backup) e decidir se vale o custo.
+
+Nada foi implementado nem validado; é só o registro do desenho.
+
 ### P99 — AppImage do Desktop não abre no Arch/Wayland: `Could not create default EGL display: EGL_BAD_PARAMETER. Aborting...` — ✅ FECHADO: corrigido na v2.2.4 (publicada em 2026-10-18) e confirmado em máquina real (Arch/Wayland)
 
 **Achado (2026-10-18, primeiro uso real num Linux fora do CI):** `TruthID_2.2.3_amd64.appimage` baixado do release não abre no Arch (Wayland, `libwebkit2gtk-4.1` do sistema instalada): o processo imprime o erro de EGL e trava sem janela. `WEBKIT_DISABLE_DMABUF_RENDERER=1`, `WEBKIT_DISABLE_COMPOSITING_MODE=1` e `GDK_BACKEND=x11` (sozinhos ou combinados) **não resolvem**. A primeira sugestão dada ao usuário (a variável DMABUF) estava errada: o `timeout` mascarou o erro no teste.
