@@ -80,6 +80,38 @@ jobs:
           # plugins.updater.endpoints aponta em tauri.conf.json (auto-update)
           includeUpdaterJson: true
 
+  # P99 — o AppImage que o bundler gera embute as libwayland-* do Ubuntu 22.04
+  # e não abre em distros com Mesa mais novo (Arch/Wayland: EGL_BAD_PARAMETER).
+  # Reempacota sem elas e reassina; roda sobre o rascunho, antes de publicar.
+  fix-appimage:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      # só pra ter o CLI do Tauri (signer sign)
+      - name: npm install
+        working-directory: desktop
+        run: npm ci --legacy-peer-deps
+
+      - name: Remover libwayland do AppImage e reassinar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: bash .github/scripts/fix-appimage.sh
+
   # Job separado (não faz parte da matrix acima) — a extensão builda uma vez
   # só, sem depender de SO nem do toolchain Rust/Tauri. O .zip vira asset do
   # mesmo release da tag, pro landing page (site/frontend) linkar (P57).

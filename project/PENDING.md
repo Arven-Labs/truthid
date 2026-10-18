@@ -201,7 +201,7 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
-### P99 — AppImage do Desktop não abre no Arch/Wayland: `Could not create default EGL display: EGL_BAD_PARAMETER. Aborting...` — 🔶 contorno documentado no site (opção b); fix no build segue em aberto
+### P99 — AppImage do Desktop não abre no Arch/Wayland: `Could not create default EGL display: EGL_BAD_PARAMETER. Aborting...` — 🔶 fix no build implementado (v2.2.4), falta validar no CI real
 
 **Achado (2026-10-18, primeiro uso real num Linux fora do CI):** `TruthID_2.2.3_amd64.appimage` baixado do release não abre no Arch (Wayland, `libwebkit2gtk-4.1` do sistema instalada): o processo imprime o erro de EGL e trava sem janela. `WEBKIT_DISABLE_DMABUF_RENDERER=1`, `WEBKIT_DISABLE_COMPOSITING_MODE=1` e `GDK_BACKEND=x11` (sozinhos ou combinados) **não resolvem**. A primeira sugestão dada ao usuário (a variável DMABUF) estava errada: o `timeout` mascarou o erro no teste.
 
@@ -211,7 +211,9 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 **Feito:** seção "Linux: the AppImage won't open" em `apps/desktop.mdx` (+ pt-BR, es, zh-CN; `check_mdx_parity.py` OK) com o contorno e a recomendação de pacote nativo.
 
-**Em aberto (fix no build):** remover as `libwayland-*` no build exige reempacotar o AppImage depois do `tauri-action` (extrair, apagar, `appimagetool`). Isso invalida o `.sig` do updater do AppImage e o `latest.json` (`createUpdaterArtifacts: true`), então precisa reassinar e reenviar os assets. Alternativas: (a) reempacotar + reassinar no CI; (b) recomendar o pacote do sistema (AUR/`.deb`) pra Linux fora do Ubuntu e documentar o contorno no site; (c) verificar se uma versão mais nova do bundler/linuxdeploy já exclui essas libs.
+**Fix no build (v2.2.4):** job `fix-appimage` em `.github/workflows/build.yml` (roda depois da matrix, sobre o rascunho) chama `.github/scripts/fix-appimage.sh`: baixa o AppImage e o `latest.json` do release, extrai, apaga `usr/lib/libwayland-*`, reempacota com o **mesmo runtime** (`--appimage-offset`) via `appimagetool` 1.9.1 fixado por SHA256, reassina com `tauri signer sign` (mesmas secrets do tauri-action) e troca AppImage, `.sig` e as duas entradas `linux-x86_64*` do `latest.json`. Testado localmente contra o release real v2.2.3 em `DRY_RUN=1` com chave descartável: só essas 2 entradas mudam, o AppImage resultante abre sem o erro EGL. **Não validado:** upload real pro rascunho (API de assets de draft) e a assinatura com a chave de produção — só dá pra ver no CI da tag `v2.2.4`.
+
+Antes de publicar o rascunho da v2.2.4: baixar o AppImage dele, conferir que abre sem extrair e que `latest.json` tem a assinatura nova.
 
 ### P98 — Traduzir a política de privacidade, as seções Desktop do Security Model e `/donate` (pt-BR, es, zh-CN) — ✅ traduzido (Sessão 233)
 

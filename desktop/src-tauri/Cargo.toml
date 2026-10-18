@@ -1,6 +1,6 @@
 [package]
 name = "tauri-app"
-version = "2.2.3"
+version = "2.2.4"
 description = "TruthID Desktop"
 authors = ["masterlxz"]
 edition = "2021"
