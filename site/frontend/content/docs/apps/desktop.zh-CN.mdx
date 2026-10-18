@@ -22,6 +22,19 @@ description: "主要的控制方应用 — 身份创建、Ledger、设备管理�
 
 桌面端自身没有任何自动填充或网页注入代码 — 这完全是浏览器扩展的工作。桌面端在自动填充中的角色，仅仅是在两者都在本地运行时，响应扩展发来的回环请求。
 
+## Linux:AppImage 无法打开 [#linux-appimage]
+
+在部分使用 Wayland 和较新 Mesa 的发行版上(Arch 上出现过),AppImage 会立即退出,并提示 `Could not create default EGL display: EGL_BAD_PARAMETER`。AppImage 自带了 `libwayland-*` 库,与系统图形栈所期望的版本冲突。设置 `WEBKIT_DISABLE_DMABUF_RENDERER` 或 `GDK_BACKEND=x11` 无效。请解压 AppImage 并删除其中自带的 Wayland 库,让它使用系统自带的:
+
+```bash
+./TruthID_<version>_amd64.AppImage --appimage-extract
+mv squashfs-root ~/TruthID-app
+rm ~/TruthID-app/usr/lib/libwayland-*.so*
+~/TruthID-app/AppRun
+```
+
+每个新版本都需要重复这一步。如果您的发行版提供原生软件包(`.deb`、`.rpm`),请优先使用。
+
 ## 后续步骤
 
 - [移动端](/docs/apps/mobile) — 日常配对/登录设备

@@ -22,6 +22,19 @@ Desktop runs a small HTTP server on `localhost`, listening on one of ports `4795
 
 Desktop has no autofill or web-page injection code of its own — that's entirely the browser extension's job. Desktop's role in autofill is purely to answer the extension's loopback requests when both are running locally.
 
+## Linux: the AppImage won't open [#linux-appimage]
+
+On some distributions with Wayland and a recent Mesa (seen on Arch), the AppImage exits right away with `Could not create default EGL display: EGL_BAD_PARAMETER`. The AppImage bundles its own `libwayland-*` libraries, which clash with the ones your system's graphics stack expects. Setting `WEBKIT_DISABLE_DMABUF_RENDERER` or `GDK_BACKEND=x11` does not help. Extract it and remove the bundled Wayland libraries so it uses your system's:
+
+```bash
+./TruthID_<version>_amd64.AppImage --appimage-extract
+mv squashfs-root ~/TruthID-app
+rm ~/TruthID-app/usr/lib/libwayland-*.so*
+~/TruthID-app/AppRun
+```
+
+Repeat this for each new version. If your distribution offers a native package (`.deb`, `.rpm`), prefer it.
+
 ## Next steps
 
 - [Mobile](/docs/apps/mobile) — the day-to-day pairing/login device
