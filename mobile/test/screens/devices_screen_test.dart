@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:web3dart/web3dart.dart';
 
 import 'package:truthid_mobile/screens/devices_screen.dart';
 import 'package:truthid_mobile/services/blockchain_service.dart';
@@ -46,6 +49,102 @@ void main() {
       ),
     );
   }
+
+  testWidgets(
+      'scan do username preso (identidade antiga): a tela sai do spinner e '
+      'mostra o id, sem esperar o scan terminar', (tester) async {
+    when(() => mockStorage.getPairedIdentityId()).thenAnswer((_) async => '1');
+    when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+    when(() => mockBlockchain.getDevice(deviceAddress)).thenAnswer(
+      (_) async =>
+          DeviceInfo(identityId: BigInt.one, revoked: false, exists: true),
+    );
+    // Nunca completa: o scan on-chain continua rodando em segundo plano.
+    final pending = Completer<String?>();
+    when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+        .thenAnswer((_) => pending.future);
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pump();
+    await tester.pump();
+
+    // O device card já está na tela (antes: spinner até o scan acabar).
+    expect(find.text(deviceAddress), findsOneWidget);
+    expect(find.text('#1'), findsWidgets);
+    // Nenhum spinner de tela cheia: só o indicador discreto de "procurando".
+    expect(find.byType(ListView), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+
+    // Estourado o teto do scan (20 s), aparece o campo pra informar à mão.
+    await tester.pump(const Duration(seconds: 21));
+    await tester.pump();
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets(
+      'scan não achou o username: pede o @username e confirma on-chain',
+      (tester) async {
+    when(() => mockStorage.getPairedIdentityId()).thenAnswer((_) async => '1');
+    when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+    when(() => mockStorage.savePairedUsername('alice'))
+        .thenAnswer((_) async {});
+    when(() => mockBlockchain.getDevice(deviceAddress)).thenAnswer(
+      (_) async =>
+          DeviceInfo(identityId: BigInt.one, revoked: false, exists: true),
+    );
+    when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+        .thenAnswer((_) async => null);
+    when(() => mockBlockchain.getIdentityByUsername('alice')).thenAnswer(
+      (_) async => IdentityInfo(
+        id: BigInt.one,
+        controller:
+            EthereumAddress.fromHex('0x1234567890123456789012345678901234567890'),
+      ),
+    );
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    // Campo de entrada manual aparece.
+    expect(find.byType(TextField), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '@alice');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    verify(() => mockStorage.savePairedUsername('alice')).called(1);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('@alice'), findsWidgets);
+  });
+
+  testWidgets('username digitado é de outra identidade: mostra erro e não salva',
+      (tester) async {
+    when(() => mockStorage.getPairedIdentityId()).thenAnswer((_) async => '1');
+    when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+    when(() => mockBlockchain.getDevice(deviceAddress)).thenAnswer(
+      (_) async =>
+          DeviceInfo(identityId: BigInt.one, revoked: false, exists: true),
+    );
+    when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+        .thenAnswer((_) async => null);
+    when(() => mockBlockchain.getIdentityByUsername('bob')).thenAnswer(
+      (_) async => IdentityInfo(
+        id: BigInt.two,
+        controller:
+            EthereumAddress.fromHex('0x1234567890123456789012345678901234567890'),
+      ),
+    );
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'bob');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => mockStorage.savePairedUsername(any()));
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.textContaining('different identity'), findsOneWidget);
+  });
 
   testWidgets(
       'identityId e username já cacheados — mostra @username sem chamar '

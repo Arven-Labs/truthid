@@ -128,6 +128,38 @@
       }
     }
   },
+  "devicesScreenUsernameTitle": "No encontramos tu @username automáticamente",
+  "@devicesScreenUsernameTitle": {
+    "description": "Heading of the card shown on the Devices screen when the paired @username could not be resolved automatically."
+  },
+  "devicesScreenUsernameBody": "Ingresa tu @username para confirmarlo on-chain. Solo se guarda si coincide con la identidad vinculada a este dispositivo.",
+  "@devicesScreenUsernameBody": {
+    "description": "Explains the manual @username entry: it is verified on-chain against the paired identity before being saved."
+  },
+  "devicesScreenUsernameFieldLabel": "Tu @username",
+  "@devicesScreenUsernameFieldLabel": {
+    "description": "Label of the text field where the user types their @username."
+  },
+  "devicesScreenUsernameConfirmButton": "Confirmar",
+  "@devicesScreenUsernameConfirmButton": {
+    "description": "Button that verifies the typed @username on-chain."
+  },
+  "devicesScreenUsernameSearching": "Buscando tu @username…",
+  "@devicesScreenUsernameSearching": {
+    "description": "Shown while the typed @username is being verified."
+  },
+  "devicesScreenUsernameNotFound": "No hay ninguna identidad con ese @username.",
+  "@devicesScreenUsernameNotFound": {
+    "description": "Error: no identity exists with the typed @username."
+  },
+  "devicesScreenUsernameWrongIdentity": "Ese @username pertenece a otra identidad distinta de la vinculada a este dispositivo.",
+  "@devicesScreenUsernameWrongIdentity": {
+    "description": "Error: the typed @username exists but belongs to a different identity than the paired one."
+  },
+  "devicesScreenUsernameUnreachable": "No se pudo acceder a la red. Inténtalo de nuevo.",
+  "@devicesScreenUsernameUnreachable": {
+    "description": "Error: the network/RPC could not be reached while verifying the @username."
+  },
   "devicesScreenEncryptionKeyLabel": "Clave de cifrado",
   "@devicesScreenEncryptionKeyLabel": {
     "description": "Small muted section label above the encryption public key on the Devices screen."
