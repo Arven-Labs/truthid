@@ -201,6 +201,18 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P99 — AppImage do Desktop não abre no Arch/Wayland: `Could not create default EGL display: EGL_BAD_PARAMETER. Aborting...` — 🔶 contorno documentado no site (opção b); fix no build segue em aberto
+
+**Achado (2026-10-18, primeiro uso real num Linux fora do CI):** `TruthID_2.2.3_amd64.appimage` baixado do release não abre no Arch (Wayland, `libwebkit2gtk-4.1` do sistema instalada): o processo imprime o erro de EGL e trava sem janela. `WEBKIT_DISABLE_DMABUF_RENDERER=1`, `WEBKIT_DISABLE_COMPOSITING_MODE=1` e `GDK_BACKEND=x11` (sozinhos ou combinados) **não resolvem**. A primeira sugestão dada ao usuário (a variável DMABUF) estava errada: o `timeout` mascarou o erro no teste.
+
+**Causa provável:** o AppImage (gerado pelo bundler do Tauri a partir do runner `ubuntu-22.04`) embute o WebKitGTK do Ubuntu e `libwayland-{client,server,cursor,egl}` próprias, mas usa a libEGL/Mesa do sistema; a mistura das duas versões de wayland quebra a inicialização do EGL.
+
+**Contorno validado pelo dono do projeto (janela abriu, 2026-10-18):** `./X.AppImage --appimage-extract`, apagar `usr/lib/libwayland-*.so*` e rodar `AppRun` — o erro some e o processo segue rodando.
+
+**Feito:** seção "Linux: the AppImage won't open" em `apps/desktop.mdx` (+ pt-BR, es, zh-CN; `check_mdx_parity.py` OK) com o contorno e a recomendação de pacote nativo.
+
+**Em aberto (fix no build):** remover as `libwayland-*` no build exige reempacotar o AppImage depois do `tauri-action` (extrair, apagar, `appimagetool`). Isso invalida o `.sig` do updater do AppImage e o `latest.json` (`createUpdaterArtifacts: true`), então precisa reassinar e reenviar os assets. Alternativas: (a) reempacotar + reassinar no CI; (b) recomendar o pacote do sistema (AUR/`.deb`) pra Linux fora do Ubuntu e documentar o contorno no site; (c) verificar se uma versão mais nova do bundler/linuxdeploy já exclui essas libs.
+
 ### P98 — Traduzir a política de privacidade, as seções Desktop do Security Model e `/donate` (pt-BR, es, zh-CN) — ✅ traduzido (Sessão 233)
 
 **Sessão 233:** `privacy.{pt-BR,es,zh-CN}.mdx`, `privacy` nos 3 `meta.*.json` e as duas seções Desktop nos 3 `security.*.mdx` (com âncoras `#desktop-...`); `next build` gera `/{locale}/docs/privacy`. `/donate` fica só em inglês (decisão: é só QR + endereço). Se o P97 mudar o texto da política, atualizar as 4 versões.
