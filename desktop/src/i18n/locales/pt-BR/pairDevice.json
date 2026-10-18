@@ -4,7 +4,7 @@
   "instructions": "No seu celular, abra <0>Dispositivos → Mostrar QR para parear</0> e cole aqui os dados exibidos:",
   "deviceAddressLabel": "Endereço do dispositivo",
   "invalidAddress": "Endereço inválido.",
-  "encryptionKeyLabel": "Chave de criptografia (opcional)",
+  "encryptionKeyLabel": "Chave de criptografia",
   "deviceNameLabel": "Nome do dispositivo",
   "rejectedOnLedger": "Transação rejeitada no Ledger.",
   "errorPrefix": "Erro: {{message}}",
@@ -13,5 +13,8 @@
   "confirmWallet2": "Confirmando na carteira (2/2)...",
   "waitingNetwork2": "Aguardando a rede (2/2)...",
   "registerDevice": "Registrar dispositivo",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "vaultKeyMissing": "Sem a chave de criptografia, o dispositivo seria registrado sem acesso ao Vault. Cole a chave de criptografia mostrada no celular (Devices → Show encryption key).",
+  "vaultKeyFailed": "Não foi possível cifrar a chave do Vault para este dispositivo: {{message}}",
+  "allowNoVaultKey": "Registrar mesmo assim, sem acesso ao Vault (dá para enviar a chave depois em \"Redistribute vault key\")"
 }
