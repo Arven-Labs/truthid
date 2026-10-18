@@ -242,7 +242,7 @@ novo e as 4 versões divergem; (2) `privacy.pt-BR.mdx`, `privacy.es.mdx`, `priva
 `PrivacyUrl` do winget continua apontando pra versão em inglês, que é a canônica. Conferir no build do site que as
 rotas por locale usam o texto traduzido e não caem no inglês.
 
-### P101 — Mobile: tela inicial presa num spinner para identidade antiga (scan de logs do @username sem fim) — ✅ corrigido na v2.2.5, falta confirmar no celular real (2026-10-18)
+### P101 — Mobile: tela inicial presa num spinner para identidade antiga (scan de logs do @username sem fim) — ✅ FECHADO: corrigido na v2.2.5 e validado no celular real (2026-10-18)
 
 **Achado:** primeiro uso real do Mobile com uma identidade antiga (anterior aos ~100 mil blocos recentes). `DevicesScreen._reload` aguardava `resolvePairedUsername`, que chama `getUsernameForIdentity`: como o contrato não tem getter id→username, a única fonte é o evento `IdentityCreated`, varrido em chunks de 2.000 blocos; a fase 2 (identidade antiga) percorre até ~1.400 chunks **em sequência**, e os RPCs públicos limitam `eth_getLogs` (medido em 2026-10-18: `mainnet.base.org` 429, `base.drpc.org` 400, `base-rpc.publicnode.com` ok). A aba Devices é a primeira, então o app inteiro parecia travado. Confirmado no aparelho (SM-S731B, Android 16, via adb sem fio): rede ok (ping aos 3 RPCs ~7 ms), app vivo, tráfego contínuo alternando entre mainnet.base.org e publicnode, spinner após 5 min. O app de release não imprime exceções do Dart, então não houve log de erro.
 
@@ -250,7 +250,9 @@ rotas por locale usam o texto traduzido e não caem no inglês.
 
 **Versão:** Mobile `2.2.0+4` → `2.2.5+5` (o APK da v2.2.4 saiu com 2.2.0 e o banner "update available" nunca sumia) e Desktop `2.2.5` (nome dos instaladores vem do `tauri.conf.json`).
 
-**Não validado:** o fluxo no celular real (spinner some, campo do @username aparece e confirma). A tela só mostra o campo manual depois do teto de 20 s do scan. Winget fica em 2.2.3 (Desktop sem mudança de código nesta versão).
+**Validado no aparelho real (SM-S731B, Android 16, via adb sem fio):** o APK 2.2.5 do rascunho da release foi instalado por cima do 2.2.0 (`adb install -r`; mesmo certificado de assinatura, SHA-256 `784d6b5b…be77`, dados mantidos). Aos 6 s a aba Devices já mostrava o card do device ("Looking up your @username…"); aos 30 s o nome resolveu sozinho para `@masterlxz` (identidade #1, o pior caso do scan). Sessions e Wallet abrem na hora com o nome em cache. A aba Vault não foi aberta de propósito.
+
+**Não exercitado no aparelho:** o campo manual do @username (só aparece depois do teto de 20 s; coberto por testes de widget e do resolvedor). Winget fica em 2.2.3 (Desktop sem mudança de código nesta versão).
 
 ### P97 — Política de privacidade vs. app Mobile: auditoria feita só pela metade, a política pode estar incompleta — 🔶 quase fechado (Sessão 233)
 
