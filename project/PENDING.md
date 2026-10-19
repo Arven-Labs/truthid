@@ -201,13 +201,16 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
-### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — 🐞 achado em 2026-10-18, sync corrigido (branch `fix/mobile-sync-versao-on-chain`)
+### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — 🐞 sync corrigido e publicado na v2.2.6 (2026-10-18), falta validar no celular e tratar os erros do Enviar
 
 **Sintoma (uso real):** o dono do projeto mudou o celular de read-only pra can-write no Desktop, clicou em Enviar, assinou com a wallet e nada mudou no celular. O celular mostrava itens que o Desktop não tinha.
 
 **Causa 1 (corrigida):** `VaultSyncService.sync()` comparava `ref.version` (contador de publicações on-chain) com `currentVersion()` (contador de edições do vault, sempre maior). O celular nunca puxava publicações que só mudavam permissão/perfil. Fix: marcador `vault_last_synced_chain_version` em `VaultRepository` + desempate `chainAhead` no sync. Teste de regressão novo (falha sem o fix, passa com); 756 testes passam numa cópia no scratchpad.
 
 **Causa 2 (a tratar):** o Desktop só envia o vault, não baixa da chain. Com o `vault.enc` local praticamente vazio (170 bytes), o Enviar publicou um vault vazio por cima do que tinha itens. Recuperado na mão: backup do celular (`.truthid-backup`) importado no Desktop e republicado. **Instalar a versão com o fix no celular só depois de conferir que o vault on-chain tem os itens**, senão o celular baixa o vault vazio e perde os itens locais.
+
+**Estado ao fim da sessão (2026-10-18):** PR #28 mergeado, release `v2.2.6` publicada (Desktop + APK), site apontando pra ela. Backup do vault do celular (5 itens, todos de teste) em `~/truthid-backup-celular/vault-backup.truthid-backup` (senha provisória `truthid-tmp-2026`), já importado no Desktop e republicado (manifesto local v23 às 21:18; **a tx `updateVault` on-chain não foi conferida**, só o "Enviado ✓" pendente de confirmar). O celular (Samsung SM-S731B, adb wireless) ainda está no APK antigo e em "Read-only".
+**Próximo passo:** confirmar que o vault on-chain tem os itens, instalar o APK 2.2.6 no celular, abrir o Vault e ver se saiu de "Read-only" (can-write) com os itens preservados. Depois, os itens abaixo.
 
 **A fazer (tratamento de erros do Enviar):**
 1. Desktop: avisar/bloquear publish de vault vazio (ou com bem menos entradas) sobre um vault on-chain com itens.
