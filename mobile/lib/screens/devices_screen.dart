@@ -121,6 +121,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       storage: _storage,
       blockchain: _blockchain,
       identityId: identityId,
+      deviceAddress: _deviceAddress,
     );
     if (!mounted) return;
     setState(() {

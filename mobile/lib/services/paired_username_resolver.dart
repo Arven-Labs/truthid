@@ -22,10 +22,27 @@ Future<String?> resolvePairedUsername({
   required LocalStorageService storage,
   required BlockchainService blockchain,
   required String identityId,
+  // Endereço deste device: habilita o caminho direto (`getUsernameForDevice`,
+  // ~6 chamadas de RPC, independe da idade da identidade) antes do scan.
+  String? deviceAddress,
   Duration scanTimeout = kUsernameScanTimeout,
 }) async {
   final cached = await storage.getPairedUsername();
   if (cached != null) return cached;
+
+  if (deviceAddress != null) {
+    try {
+      final direct = await blockchain
+          .getUsernameForDevice(deviceAddress)
+          .timeout(kUsernameDirectLookupTimeout);
+      if (direct != null) {
+        await storage.savePairedUsername(direct);
+        return direct;
+      }
+    } catch (_) {
+      // Segue pro scan por eventos abaixo.
+    }
+  }
 
   try {
     // O scan de `IdentityCreated` pode levar muitos minutos pra uma identidade
@@ -50,6 +67,9 @@ Future<String?> resolvePairedUsername({
 
 /// Teto do scan de logs em `resolvePairedUsername`.
 const kUsernameScanTimeout = Duration(seconds: 20);
+
+/// Teto do caminho direto (`getUsernameForDevice`), antes de cair no scan.
+const kUsernameDirectLookupTimeout = Duration(seconds: 15);
 
 /// Resultado de `verifyAndSavePairedUsername`.
 enum UsernameVerification {

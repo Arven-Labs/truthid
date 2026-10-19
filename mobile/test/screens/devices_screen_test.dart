@@ -36,6 +36,10 @@ void main() {
 
     when(() => mockKeyService.getDeviceAddress())
         .thenAnswer((_) async => deviceAddress);
+    // Por padrão o caminho direto (por device) não acha nada: os testes que
+    // dependem do scan por eventos continuam exercitando esse caminho.
+    when(() => mockBlockchain.getUsernameForDevice(any()))
+        .thenAnswer((_) async => null);
   });
 
   Widget buildScreen() {
@@ -49,6 +53,28 @@ void main() {
       ),
     );
   }
+
+  testWidgets(
+      'identidade antiga: o username vem pelo device, sem varrer o histórico',
+      (tester) async {
+    when(() => mockStorage.getPairedIdentityId()).thenAnswer((_) async => '1');
+    when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+    when(() => mockStorage.savePairedUsername('alice'))
+        .thenAnswer((_) async {});
+    when(() => mockBlockchain.getDevice(deviceAddress)).thenAnswer(
+      (_) async =>
+          DeviceInfo(identityId: BigInt.one, revoked: false, exists: true),
+    );
+    when(() => mockBlockchain.getUsernameForDevice(deviceAddress))
+        .thenAnswer((_) async => 'alice');
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    expect(find.text('@alice'), findsNWidgets(2));
+    verify(() => mockStorage.savePairedUsername('alice')).called(1);
+    verifyNever(() => mockBlockchain.getUsernameForIdentity(any()));
+  });
 
   testWidgets(
       'scan do username preso (identidade antiga): a tela sai do spinner e '

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
 import '../contracts/abis.dart';
@@ -39,6 +40,10 @@ class DeviceInfo {
   // `desktop/src/types.ts:1-8`, que já tem os dois).
   final String pubKey;
   final String label;
+  // `block.timestamp` (segundos) em que o device foi registrado. 0 quando o
+  // call site não o preenche. Permite achar o bloco exato do registro (ver
+  // `getUsernameForDevice`).
+  final int addedAt;
 
   const DeviceInfo({
     required this.identityId,
@@ -46,6 +51,7 @@ class DeviceInfo {
     required this.exists,
     this.pubKey = '',
     this.label = '',
+    this.addedAt = 0,
   });
 }
 
@@ -341,6 +347,106 @@ class BlockchainService {
   // públicos limitam por taxa, e mais paralelismo só troca lentidão por 429.
   static const _scanParallelism = 5;
 
+  // Base produz 1 bloco a cada 2 s desde o genesis — por isso um timestamp
+  // vira número de bloco por conta simples (medido contra a mainnet em
+  // 2026-10-18: o bloco estimado a partir do `addedAt` de um device real
+  // tinha exatamente o mesmo timestamp).
+  static const _baseBlockSeconds = 2;
+
+  // Folga em volta do bloco estimado, caso a cadência saia do padrão.
+  static const _deviceLookupWindowBlocks = 200;
+
+  // keccak256("DeviceRegistered(uint256,address,string,bytes)") e
+  // keccak256("DeviceAdded(address)").
+  static const _deviceRegisteredTopic =
+      '0x69ccb392a4ceacf6f1226c91b04462bc67391da385c1a83fca7871194367fe40';
+  static const _deviceAddedTopic =
+      '0x7f83670760ccf6df0d685c2ffa624d26ca757940c78361fcbbf187253055f951';
+
+  /// Bloco em que ocorreu `timestamp`, a partir do bloco mais recente.
+  @visibleForTesting
+  static int estimateBlockAtTimestamp({
+    required int latestBlock,
+    required int latestTimestamp,
+    required int timestamp,
+  }) =>
+      latestBlock - (latestTimestamp - timestamp) ~/ _baseBlockSeconds;
+
+  /// Controller (smart account) que registrou `deviceAddress`: é o emissor do
+  /// log `DeviceAdded(device)` dentro dos logs do recibo do registro.
+  @visibleForTesting
+  static EthereumAddress? controllerFromReceiptLogs(
+      List<dynamic> logs, String deviceAddress) {
+    final deviceHex = deviceAddress.toLowerCase().replaceFirst('0x', '');
+    for (final raw in logs) {
+      final log = raw as Map<String, dynamic>;
+      final topics = (log['topics'] as List).cast<String>();
+      if (topics.length < 2) continue;
+      if (topics[0].toLowerCase() != _deviceAddedTopic) continue;
+      if (!topics[1].toLowerCase().endsWith(deviceHex)) continue;
+      return EthereumAddress.fromHex(log['address'] as String);
+    }
+    return null;
+  }
+
+  // Descobre o @username a partir do endereço deste device, sem varrer o
+  // histórico. O contrato não tem getter id→username, e o scan de
+  // `IdentityCreated` (`getUsernameForIdentity`) pode levar muitos minutos pra
+  // uma identidade antiga. Aqui o caminho é curto e não depende da idade da
+  // identidade:
+  //  1. `getDevice` → `addedAt` → bloco exato do registro;
+  //  2. `DeviceRegistered` (emitido pelo DeviceRegistry, endereço conhecido)
+  //     numa janela mínima → hash da tx;
+  //  3. recibo da tx → o log `DeviceAdded` é emitido pela própria smart
+  //     account, que é o controller da identidade;
+  //  4. `getUsernameByController` → @username.
+  // ~6 chamadas de RPC no total (validado contra a mainnet com um device
+  // real). Devolve null se qualquer passo não achar nada — quem chama cai no
+  // scan antigo.
+  Future<String?> getUsernameForDevice(String deviceAddress) async {
+    try {
+      final device = await getDevice(deviceAddress);
+      if (device == null || device.addedAt == 0) return null;
+
+      final latest = await getLatestBlockNumber();
+      if (latest == null) return null;
+      final block = await _rpcCall('eth_getBlockByNumber', ['0x${latest.toRadixString(16)}', false]);
+      final latestTimestamp =
+          int.parse(((block as Map<String, dynamic>)['timestamp'] as String).substring(2), radix: 16);
+
+      final estimated = estimateBlockAtTimestamp(
+        latestBlock: latest,
+        latestTimestamp: latestTimestamp,
+        timestamp: device.addedAt,
+      );
+
+      final logs = await getLogs(
+        addresses: [_deviceRegistryAddress],
+        topics: [
+          _deviceRegisteredTopic,
+          null,
+          '0x${deviceAddress.toLowerCase().replaceFirst('0x', '').padLeft(64, '0')}',
+        ],
+        fromBlock: estimated - _deviceLookupWindowBlocks,
+        toBlock: estimated + _deviceLookupWindowBlocks,
+      );
+      if (logs.isEmpty) return null;
+
+      // Se o device foi re-registrado, vale o registro mais recente.
+      final txHash = logs.last['transactionHash'] as String;
+      final receipt = await _rpcCall('eth_getTransactionReceipt', [txHash]);
+      if (receipt == null) return null;
+      final controller = controllerFromReceiptLogs(
+          (receipt as Map<String, dynamic>)['logs'] as List, deviceAddress);
+      if (controller == null) return null;
+
+      final username = await getUsernameByController(controller);
+      return username.isEmpty ? null : username;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Resolve o @username da identidade via eth_getLogs no evento IdentityCreated.
   // O contrato não tem um getter id→username, então a única fonte é o log.
   //
@@ -514,6 +620,7 @@ class BlockchainService {
         exists: true,
         pubKey: address,
         label: tuple[2] as String,
+        addedAt: (tuple[3] as BigInt).toInt(),
       );
     } catch (_) {
       return null;

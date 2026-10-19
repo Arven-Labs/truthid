@@ -201,6 +201,16 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P103 — Mobile: achar o @username pelo device em vez de varrer o histórico inteiro — ✅ implementado (2026-10-18), falta validar no celular real
+
+**Motivo:** o P101 tirou o spinner e deu um plano B manual, mas o caminho automático ainda varria até ~1.400 chunks de `eth_getLogs` pra uma identidade antiga. O dono do projeto pediu "registrar data ou algo assim e procurar mais diretamente".
+
+**Achado (sem mudar contrato):** `DeviceRegistry.getDevice(device).addedAt` já guarda a data do registro, e a Base tem blocos de exatamente 2 s, então `addedAt` dá o **bloco exato** (medido: diferença de 0 s). Nesse bloco o `DeviceRegistry` emite `DeviceRegistered(identityId, pubKey, …)` (endereço conhecido, o que os RPCs públicos exigem — a publicnode rejeita `eth_getLogs` sem `address`); o recibo dessa tx traz `DeviceAdded(device)` **emitido pela própria smart account**, que é o controller da identidade; `getUsernameByController(controller)` devolve o @username. Validado na mainnet com o device real do dono do projeto (identidade #1): `masterlxz` em **6 chamadas de RPC** (contra ~1.400).
+
+**Implementação:** `BlockchainService.getUsernameForDevice` (+ helpers puros `estimateBlockAtTimestamp` e `controllerFromReceiptLogs`), `DeviceInfo.addedAt`; `resolvePairedUsername` ganhou o parâmetro `deviceAddress` e tenta o caminho direto antes do scan por eventos (que continua como plano B), com teto de 15 s; `DevicesScreen` e `ShowDeviceQrScreen` passam o endereço. As demais telas leem o cache que essas duas preenchem. 755 testes do mobile passando (testes novos nos helpers, no resolvedor e na tela), `flutter analyze` sem erros nem avisos.
+
+**Não validado:** no celular real (o caminho foi validado contra a mainnet em script, não dentro do app). Limitação: depende de o registro ter sido feito pelo fluxo normal (`registerDevice` + `addDevice` na mesma tx); se não achar, cai no scan.
+
 ### P102 — Onboarding: o primeiro uso real (2026-10-18) bateu em 7 pontos de atrito seguidos — 💡 levantamento, nada corrigido além do P99/P101
 
 **Origem:** o dono do projeto instalou o app no Arch (desktop) e no Android (mobile) pela primeira vez como usuário e comentou: "tá muito burocrático, temos que simplificar isso depois". Cada item abaixo foi visto de verdade nessa sessão.
