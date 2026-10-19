@@ -241,10 +241,10 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 **Já resolvido na mesma sessão:** o item 2 acima (falha silenciosa do pareamento), P99 (AppImage não abria no Arch/Wayland) e P101 (spinner infinito no Mobile para identidade antiga). Relacionado: P100 (publicar com assinatura e pagamento no celular), que ataca o item 1.
 
 **Para retomar (estado em 2026-10-18, fim da sessão):**
-- Release atual: **v2.2.5**. Na `main` e **fora** da v2.2.5: a correção do pareamento (PR #25, item 2) e a busca direta do @username (P103, PR #26). Uma `v2.2.6` com os dois exige bump de Desktop e Mobile (ver o fluxo do P95, item 7). Outra conversa do dono do projeto pode estar preparando essa versão: **conferir tags e releases antes de cortar qualquer uma**, pra não colidir.
+- Release atual: **v2.2.6** (publicada em 2026-10-19 por outra conversa do dono do projeto; inclui a correção do pareamento do PR #25, a busca direta do @username do P103/PR #26 e o P105/PR #28 — conferido com `git merge-base --is-ancestor` contra a tag). Antes de cortar qualquer próxima versão, **conferir tags e releases**, pra não colidir com outra conversa.
 - Decisões em aberto do dono do projeto: (1) autorizar **um** upload de teste no Turbo (texto minúsculo, carteira nova e sem saldo) para confirmar a faixa gratuita — destrava o P104; (2) escolher a próxima alavanca de simplificação (P104, checklist de primeiro uso, pareamento em um QR só, Pimlico sem chave por aparelho — este precisa de pesquisa, pois conflita com "o projeto não opera relayer").
 - Do lado do usuário: gerar a carteira Arweave no desktop, depositar AR, publicar a permissão `can-write` do celular, levar o backup pro celular e só então importar o Bitwarden.
-- Não validado em aparelho real: P103 (busca direta do @username dentro do app) e a correção do pareamento (PR #25) de ponta a ponta.
+- Não validado em aparelho real (já estão na v2.2.6): P103 (busca direta do @username dentro do app) e a correção do pareamento (PR #25) de ponta a ponta; o P105 foi registrado pela outra conversa.
 
 ### P100 — Ideia: publicar no Arweave pelo Desktop com a assinatura (e o pagamento) feitos no celular, via QR — 💡 ideia, não iniciada (2026-10-18)
 
