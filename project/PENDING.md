@@ -256,6 +256,27 @@ novo e as 4 versões divergem; (2) `privacy.pt-BR.mdx`, `privacy.es.mdx`, `priva
 `PrivacyUrl` do winget continua apontando pra versão em inglês, que é a canônica. Conferir no build do site que as
 rotas por locale usam o texto traduzido e não caem no inglês.
 
+### P104 — Ideia: carteira Arweave derivada da identidade + publicar via bundler (Turbo) com faixa gratuita — 🔬 viabilidade parcialmente apurada (2026-10-18), não implementado
+
+**Origem:** primeiro uso real. Hoje a carteira Arweave é local de cada aparelho e precisa de AR: não passa de um aparelho pro outro, o celular não paga quando o desktop não tem, e o usuário novo precisa comprar AR antes de publicar a primeira vez (e o celular só escreve depois de o desktop publicar a permissão). Ver P102 (item 1) e P100.
+
+**Ideia (duas peças):** (1) **carteira derivada:** todo aparelho calcula a mesma carteira Arweave a partir da chave do cofre (HKDF), sem transferir nada; (2) **bundler com faixa gratuita:** publicar itens ANS-104 pelo Turbo (ar.io/ArDrive), que anuncia upload gratuito de itens pequenos — a carteira não precisaria de saldo.
+
+**Apurado na documentação e em chamadas de leitura (nada enviado):**
+- Upload: `POST https://turbo.ardrive.io/tx` (ou `/tx/:token`, com `arweave`, `ethereum` ou `solana`), corpo = **item ANS-104 já assinado** (`application/octet-stream`); resposta 200 traz `id`, `owner`, `dataCaches`, etc. Endpoints na raiz, **sem** `/v1`. Preço: `GET /price/:token/:bytes`.
+- Faixa gratuita: a página de upload do ar.io diz "free uploads under **105 KiB**" (outra página da mesma doc dizia 100 KiB; o sandbox cita 10 MiB vitalício por carteira/IP). **Mas** `GET /price/arweave/:bytes` devolve valor **diferente de zero** até para 1 KB, e a referência da API cita um 402 não repetível "Free tier exhausted" **sem informar o limite**. Ou seja: **não está confirmado** que uma carteira nova e sem saldo consegue publicar. Só um upload de teste real confirma — e isso grava dado público e **permanente**, então depende de OK explícito do dono do projeto.
+- Tipos de assinatura: o serviço lê o tipo nos 2 primeiros bytes do item (1 a 8); a doc não diz explicitamente que o tipo 1 é o RSA do Arweave.
+
+**Trabalho necessário (estimativa qualitativa, médio/alto):**
+1. **Item ANS-104** em Rust (Desktop) e Dart (Mobile): formato binário + o `deepHash` do item (diferente do de transação; o projeto já tem `arweave_deep_hash.dart`, RSA-PSS e o cliente de transação, mas não o formato de item).
+2. **Derivação determinística da carteira:** especificar uma busca de primos própria alimentada por HKDF e implementá-la **igual** nas duas linguagens, com vetores de teste cruzados (o algoritmo do `arweave-mnemonic-keys` depende de detalhes do `node-forge`; reproduzi-lo bit a bit em Rust/Dart é arriscado). Custo de gerar RSA-4096 no celular (isolate, uma vez por aparelho).
+3. **Leitura:** conferir que os gateways resolvem o **id do item** (não só id de transação) com o prefixo `ar://` atual.
+4. **Plano B:** itens acima do limite (documentos até 50 MB) continuam exigindo saldo; manter o caminho L1 atual.
+
+**Riscos/decisões do dono do projeto:** dependência de um serviço de terceiros (a faixa gratuita pode mudar; limites por IP/carteira); quem tem a chave do cofre passa a controlar a carteira derivada (aceitável se ela não guarda fundos, a decidir); impacto no P100 (assinar no celular), que deixa de ser necessário se a carteira for a mesma em todo aparelho.
+
+**Próximo passo sugerido:** (a) OK do dono do projeto para **um** upload de teste minúsculo, sem dado real, com carteira nova e sem saldo, para confirmar a faixa gratuita; (b) só então especificar a derivação e o formato do item com vetores de teste.
+
 ### P101 — Mobile: tela inicial presa num spinner para identidade antiga (scan de logs do @username sem fim) — ✅ FECHADO: corrigido na v2.2.5 e validado no celular real (2026-10-18)
 
 **Achado:** primeiro uso real do Mobile com uma identidade antiga (anterior aos ~100 mil blocos recentes). `DevicesScreen._reload` aguardava `resolvePairedUsername`, que chama `getUsernameForIdentity`: como o contrato não tem getter id→username, a única fonte é o evento `IdentityCreated`, varrido em chunks de 2.000 blocos; a fase 2 (identidade antiga) percorre até ~1.400 chunks **em sequência**, e os RPCs públicos limitam `eth_getLogs` (medido em 2026-10-18: `mainnet.base.org` 429, `base.drpc.org` 400, `base-rpc.publicnode.com` ok). A aba Devices é a primeira, então o app inteiro parecia travado. Confirmado no aparelho (SM-S731B, Android 16, via adb sem fio): rede ok (ping aos 3 RPCs ~7 ms), app vivo, tráfego contínuo alternando entre mainnet.base.org e publicnode, spinner após 5 min. O app de release não imprime exceções do Dart, então não houve log de erro.
