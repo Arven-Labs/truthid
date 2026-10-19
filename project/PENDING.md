@@ -201,6 +201,21 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — 🐞 achado em 2026-10-18, sync corrigido (branch `fix/mobile-sync-versao-on-chain`)
+
+**Sintoma (uso real):** o dono do projeto mudou o celular de read-only pra can-write no Desktop, clicou em Enviar, assinou com a wallet e nada mudou no celular. O celular mostrava itens que o Desktop não tinha.
+
+**Causa 1 (corrigida):** `VaultSyncService.sync()` comparava `ref.version` (contador de publicações on-chain) com `currentVersion()` (contador de edições do vault, sempre maior). O celular nunca puxava publicações que só mudavam permissão/perfil. Fix: marcador `vault_last_synced_chain_version` em `VaultRepository` + desempate `chainAhead` no sync. Teste de regressão novo (falha sem o fix, passa com); 756 testes passam numa cópia no scratchpad.
+
+**Causa 2 (a tratar):** o Desktop só envia o vault, não baixa da chain. Com o `vault.enc` local praticamente vazio (170 bytes), o Enviar publicou um vault vazio por cima do que tinha itens. Recuperado na mão: backup do celular (`.truthid-backup`) importado no Desktop e republicado. **Instalar a versão com o fix no celular só depois de conferir que o vault on-chain tem os itens**, senão o celular baixa o vault vazio e perde os itens locais.
+
+**A fazer (tratamento de erros do Enviar):**
+1. Desktop: avisar/bloquear publish de vault vazio (ou com bem menos entradas) sobre um vault on-chain com itens.
+2. Mobile: não sobrescrever itens locais por manifesto remoto vazio sem confirmação.
+3. `useVaultPublish.ts`: mostrar a etapa que falhou (manifesto no Arweave, saldo de AR, assinatura, tx do `updateVault`, confirmação) em vez de falhar/sucesso mudo.
+4. Confirmar depois do Enviar que `getVault` on-chain tem a versão/hash esperados.
+5. `vault_set_device_permission` (`lib.rs`) não toma `lock_vault`, ao contrário de `vault_set_favorite`.
+
 ### P103 — Mobile: achar o @username pelo device em vez de varrer o histórico inteiro — ✅ implementado (2026-10-18), falta validar no celular real
 
 **Motivo:** o P101 tirou o spinner e deu um plano B manual, mas o caminho automático ainda varria até ~1.400 chunks de `eth_getLogs` pra uma identidade antiga. O dono do projeto pediu "registrar data ou algo assim e procurar mais diretamente".
