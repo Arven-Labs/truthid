@@ -411,6 +411,49 @@ void main() {
     expect(await repository.pendingChanges(), 0);
   });
 
+  test(
+      'versão local (edições) maior que a on-chain (publicações) não esconde '
+      'uma publicação nova — só permissão mudou, sem pendência local '
+      '(bug real: can-write do Desktop não chegava ao Mobile)', () async {
+    // Vault puxado antes, com contador de edições do Desktop em 10, quando a
+    // chain estava na publicação 3.
+    final oldBytes = Uint8List.fromList(utf8.encode(jsonEncode({
+      'version': 10,
+      'entries': [_entry('example.com')],
+    })));
+    await repository.overwriteCache(oldBytes);
+    await repository.markPublished(3, oldBytes);
+    await repository.setLastSyncedChainVersion(3);
+
+    // Desktop só concedeu can-write (edição 11) e publicou: chain na 4,
+    // abaixo do contador local (10), mas à frente do último sync (3).
+    final newBytes = Uint8List.fromList(utf8.encode(jsonEncode({
+      'version': 11,
+      'entries': [_entry('example.com')],
+      'device_permissions': [
+        {'pub_key': '0xAbC', 'can_write': true},
+      ],
+    })));
+    final digest = bytesToHex(keccak256(newBytes), include0x: true);
+    when(() => mockBlockchain.hasVault(identityId))
+        .thenAnswer((_) async => true);
+    when(() => mockBlockchain.getVault(identityId)).thenAnswer((_) async =>
+        VaultRef(
+            cid: 'bafyTestCid',
+            contentHashHex: digest,
+            updatedAt: updatedAt,
+            version: 4));
+    when(() => mockGateway.fetch('bafyTestCid'))
+        .thenAnswer((_) async => newBytes);
+
+    final outcome = await syncService.sync(identityId);
+
+    expect(outcome.status, VaultSyncStatus.synced);
+    expect(await repository.canWriteVault('0xabc'), isTrue);
+    expect(await repository.pendingChanges(), 0);
+    expect(await repository.lastSyncedChainVersion(), 4);
+  });
+
   group('Vault por-entrada (manifesto remoto)', () {
     test(
         'cid on-chain aponta pra um manifesto — busca só a entrada referenciada e reconstrói o vault local',

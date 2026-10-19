@@ -920,6 +920,7 @@ class VaultRepository {
   // flutter_secure_storage em vez de um arquivo separado.
   static const _publishedVersionKey = 'vault_last_published_version';
   static const _publishedContentHashKey = 'vault_last_published_content_hash';
+  static const _syncedChainVersionKey = 'vault_last_synced_chain_version';
   static const _storage = FlutterSecureStorage();
 
   // Assinatura do conteúdo do vault (tudo, exceto `version`) — usada só como
@@ -1049,6 +1050,18 @@ class VaultRepository {
       value: _contentSignature(data),
     );
   }
+
+  // Última `VaultRef.version` (contador de publicações on-chain) que este
+  // device já puxou. Separado de `currentVersion()`, que é o contador de
+  // EDIÇÕES do vault (cresce a cada edição, publicada ou não) — os dois não
+  // são comparáveis. 0 = nunca sincronizou com este marcador.
+  Future<int> lastSyncedChainVersion() async {
+    final raw = await _storage.read(key: _syncedChainVersionKey);
+    return raw != null ? int.tryParse(raw) ?? 0 : 0;
+  }
+
+  Future<void> setLastSyncedChainVersion(int version) =>
+      _storage.write(key: _syncedChainVersionKey, value: version.toString());
 
   // Quantas mudanças de conteúdo o vault local tem em relação ao último
   // publicado no IPFS. 0 = nada pendente.
@@ -1188,6 +1201,7 @@ class VaultRepository {
     }
     await _storage.delete(key: _publishedVersionKey);
     await _storage.delete(key: _publishedContentHashKey);
+    await _storage.delete(key: _syncedChainVersionKey);
   }
 
   Future<VaultManifest?> loadLastManifest() async {

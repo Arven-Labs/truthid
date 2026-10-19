@@ -129,7 +129,16 @@ class VaultSyncService {
         await _repository.setAsideUnreadableLocalCache();
         localVersion = 0;
       }
-      if (ref.version <= localVersion) {
+      // `ref.version` conta publicações on-chain; `localVersion` conta edições
+      // do vault (o Desktop bumpa a cada edição, publicada ou não), então o
+      // segundo costuma ficar à frente do primeiro mesmo sem nada local novo.
+      // Sem este desempate, o celular nunca puxava uma publicação que só
+      // mudou permissão/perfil (achado real: can-write concedido no Desktop
+      // não chegava ao Mobile). Sem pendência local e com a chain além do
+      // último sync, puxa mesmo assim.
+      final chainAhead = await _repository.pendingChanges() == 0 &&
+          ref.version > await _repository.lastSyncedChainVersion();
+      if (ref.version <= localVersion && !chainAhead) {
         // Local já reflete (ou está à frente d)o on-chain. Só quando as duas
         // versões batem exatamente é seguro marcar como "publicado até aqui"
         // — se local estiver à frente (mudanças pendentes deste device),
@@ -140,6 +149,7 @@ class VaultSyncService {
         if (ref.version == localVersion) {
           final localBlob = await _repository.readRawBlob();
           await _repository.markPublished(ref.version, localBlob);
+          await _repository.setLastSyncedChainVersion(ref.version);
         }
         final entries = await _repository.listEntries();
         final profileNames = await _repository.listProfileNames();
@@ -172,6 +182,7 @@ class VaultSyncService {
         // que essa versão ainda estava pendente — "pending changes" fantasma
         // no Mobile depois de sincronizar algo publicado pelo Desktop.
         await _repository.markPublished(ref.version, bytes);
+        await _repository.setLastSyncedChainVersion(ref.version);
         final entries = await _repository.listEntries();
         final profileNames = await _repository.listProfileNames();
         return VaultSyncOutcome(
@@ -207,6 +218,7 @@ class VaultSyncService {
       await _repository.saveLastManifest(manifest);
       final rebuiltBlob = await _repository.readRawBlob();
       await _repository.markPublished(ref.version, rebuiltBlob);
+      await _repository.setLastSyncedChainVersion(ref.version);
       final entries = await _repository.listEntries();
       final profileNames = await _repository.listProfileNames();
       return VaultSyncOutcome(
