@@ -240,6 +240,12 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 **Já resolvido na mesma sessão:** o item 2 acima (falha silenciosa do pareamento), P99 (AppImage não abria no Arch/Wayland) e P101 (spinner infinito no Mobile para identidade antiga). Relacionado: P100 (publicar com assinatura e pagamento no celular), que ataca o item 1.
 
+**Para retomar (estado em 2026-10-18, fim da sessão):**
+- Release atual: **v2.2.5**. Na `main` e **fora** da v2.2.5: a correção do pareamento (PR #25, item 2) e a busca direta do @username (P103, PR #26). Uma `v2.2.6` com os dois exige bump de Desktop e Mobile (ver o fluxo do P95, item 7). Outra conversa do dono do projeto pode estar preparando essa versão: **conferir tags e releases antes de cortar qualquer uma**, pra não colidir.
+- Decisões em aberto do dono do projeto: (1) autorizar **um** upload de teste no Turbo (texto minúsculo, carteira nova e sem saldo) para confirmar a faixa gratuita — destrava o P104; (2) escolher a próxima alavanca de simplificação (P104, checklist de primeiro uso, pareamento em um QR só, Pimlico sem chave por aparelho — este precisa de pesquisa, pois conflita com "o projeto não opera relayer").
+- Do lado do usuário: gerar a carteira Arweave no desktop, depositar AR, publicar a permissão `can-write` do celular, levar o backup pro celular e só então importar o Bitwarden.
+- Não validado em aparelho real: P103 (busca direta do @username dentro do app) e a correção do pareamento (PR #25) de ponta a ponta.
+
 ### P100 — Ideia: publicar no Arweave pelo Desktop com a assinatura (e o pagamento) feitos no celular, via QR — 💡 ideia, não iniciada (2026-10-18)
 
 **Origem:** o dono do projeto, ao planejar importar o Bitwarden, queria gerar a carteira Arweave no celular e importar no PC sem copiar a chave. Hoje a carteira Arweave é **local de cada aparelho** (keyring) e de propósito **não** viaja no vault sincronizado (`splice_arweave_wallet_into_export`, `lib.rs`): quem publica precisa ter a carteira no próprio aparelho, e o Desktop exige uma carteira configurada e com saldo (`arweave_publish`). O único jeito de usar a mesma carteira nos dois é o backup exportado (`arweave_wallet_jwk` no envelope), que copia a chave privada pro PC. Decisão do dono do projeto por ora: fazer tudo no celular.
@@ -427,6 +433,16 @@ atualizados pra 2.2.2, comentário postado 2026-09-29); (d) `mobile/` não foi b
    `master` defasado: `gh repo sync` falhou por falta do escopo `workflow` (`gh auth refresh -s workflow`).
    Fluxo pra próximas versões: bump (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock`, pacote `tauri-app`) → PR → tag →
    publicar release → manifests → PR no winget-pkgs via API (sem clonar).
+   **Desde a v2.2.4 (2026-10-18), antes de publicar o rascunho de uma release:** (a) o job `fix-appimage`
+   (`build.yml` + `.github/scripts/fix-appimage.sh`) roda depois da matrix: tira as `libwayland-*` do AppImage,
+   reassina e troca o `latest.json` — conferir os 6 jobs verdes, o AppImage do rascunho sem `libwayland-*`, as 2
+   entradas `linux-*` do `latest.json` com a assinatura do `.sig` e a assinatura válida contra a `pubkey` de
+   `tauri.conf.json` (foi checada com o crate `minisign-verify`); (b) a versão do **Mobile**
+   (`mobile/pubspec.yaml`, `X.Y.Z+N`) tem que ser a da tag, senão o banner "update available" do app nunca some
+   (o APK da v2.2.4 saiu como 2.2.0); (c) a do **Desktop** (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock`) também,
+   senão os instaladores saem com outro número; (d) o APK novo precisa estar assinado com o mesmo certificado do
+   instalado (conferido com `apksigner verify --print-certs`) pra atualizar por cima sem perder dados; para
+   testar no aparelho: `adb install -r`. Winget só precisa de PR quando o Desktop muda de verdade (segue em 2.2.3).
 
 Release: `v2.2.3` (anterior `v2.2.2`). Relacionado a [[project_new_ideas_s214]] (P65, winget).
 
