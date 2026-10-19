@@ -181,4 +181,78 @@ void main() {
       verifyNever(() => mockStorage.savePairedUsername(any()));
     });
   });
+
+  group('caminho direto por device (deviceAddress)', () {
+    const device = '0xAC2CA4113bb88f1F2A4a03F7a6bcDAc4e9762bc3';
+
+    test('acha pelo device: salva e NÃO varre o histórico', () async {
+      when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+      when(() => mockBlockchain.getUsernameForDevice(device))
+          .thenAnswer((_) async => 'alice');
+      when(() => mockStorage.savePairedUsername('alice')).thenAnswer((_) async {});
+
+      final result = await resolvePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        deviceAddress: device,
+      );
+
+      expect(result, 'alice');
+      verify(() => mockStorage.savePairedUsername('alice')).called(1);
+      verifyNever(() => mockBlockchain.getUsernameForIdentity(any()));
+    });
+
+    test('caminho direto não achou: cai no scan por eventos', () async {
+      when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+      when(() => mockBlockchain.getUsernameForDevice(device))
+          .thenAnswer((_) async => null);
+      when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+          .thenAnswer((_) async => 'alice');
+      when(() => mockStorage.savePairedUsername('alice')).thenAnswer((_) async {});
+
+      final result = await resolvePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        deviceAddress: device,
+      );
+
+      expect(result, 'alice');
+      verify(() => mockBlockchain.getUsernameForIdentity(BigInt.one)).called(1);
+    });
+
+    test('caminho direto lança: também cai no scan', () async {
+      when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+      when(() => mockBlockchain.getUsernameForDevice(device))
+          .thenThrow(Exception('rpc down'));
+      when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+          .thenAnswer((_) async => 'alice');
+      when(() => mockStorage.savePairedUsername('alice')).thenAnswer((_) async {});
+
+      final result = await resolvePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+        deviceAddress: device,
+      );
+
+      expect(result, 'alice');
+    });
+
+    test('sem deviceAddress: nem tenta o caminho direto', () async {
+      when(() => mockStorage.getPairedUsername()).thenAnswer((_) async => null);
+      when(() => mockBlockchain.getUsernameForIdentity(BigInt.one))
+          .thenAnswer((_) async => 'alice');
+      when(() => mockStorage.savePairedUsername('alice')).thenAnswer((_) async {});
+
+      await resolvePairedUsername(
+        storage: mockStorage,
+        blockchain: mockBlockchain,
+        identityId: '1',
+      );
+
+      verifyNever(() => mockBlockchain.getUsernameForDevice(any()));
+    });
+  });
 }

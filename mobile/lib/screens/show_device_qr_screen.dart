@@ -83,6 +83,7 @@ class _ShowDeviceQrScreenState extends State<ShowDeviceQrScreen> {
       storage: _storage,
       blockchain: _blockchain,
       identityId: identityId,
+      deviceAddress: address,
     ));
 
     // Non-critical: se falhar aqui (ex: app derrubado em background), a
