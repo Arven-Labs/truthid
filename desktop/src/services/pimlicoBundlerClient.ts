@@ -1,6 +1,7 @@
 import type { Address, Hex } from "viem";
 
 import { ENTRY_POINT_V07, type UserOperationV07 } from "../utils/userOperation";
+import { describeBundlerError, describeBundlerHttpError } from "../utils/bundlerErrors";
 
 // Monta a URL do bundler Pimlico a partir da chave de API e da rede
 // ("base", "base-sepolia", ...) — mirror de `pimlicoBundlerUrl` em
@@ -22,10 +23,13 @@ async function rpcCall(url: string, method: string, params: unknown[]): Promise<
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", method, params, id: 1 }),
   });
+  if (!response.ok) {
+    throw new Error(describeBundlerHttpError(response.status));
+  }
   const json = (await response.json()) as { result?: unknown; error?: unknown };
 
   if (json.error) {
-    throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
+    throw new Error(describeBundlerError(json.error));
   }
 
   return json.result;
