@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:web3dart/crypto.dart';
 
 import 'package:truthid_mobile/services/blockchain_service.dart';
+import 'package:truthid_mobile/services/device_key_service.dart';
 import 'package:truthid_mobile/services/ipfs_gateway_client.dart';
 import 'package:truthid_mobile/services/vault_cipher_service.dart';
 import 'package:truthid_mobile/services/vault_key_service.dart';
@@ -24,6 +25,8 @@ class _FakeBlockchainService extends Fake implements BlockchainService {}
 class MockIpfsGatewayClient extends Mock implements IpfsGatewayClient {}
 
 class MockVaultKeyService extends Mock implements VaultKeyService {}
+
+class MockDeviceKeyService extends Mock implements DeviceKeyService {}
 
 // Cipher no-op — mesma técnica de vault_repository_test.dart, testa a lógica
 // de sync sem depender de chave real.
@@ -87,6 +90,7 @@ void main() {
   late MockBlockchainService mockBlockchain;
   late MockIpfsGatewayClient mockGateway;
   late MockVaultKeyService mockKeyService;
+  late MockDeviceKeyService mockDeviceKeyService;
   late Directory tempDir;
   late String vaultPath;
   late VaultRepository repository;
@@ -127,6 +131,9 @@ void main() {
     mockBlockchain = MockBlockchainService();
     mockGateway = MockIpfsGatewayClient();
     mockKeyService = MockVaultKeyService();
+    mockDeviceKeyService = MockDeviceKeyService();
+    when(() => mockDeviceKeyService.getDeviceAddress())
+        .thenAnswer((_) async => '0xMyDevice');
     tempDir = await Directory.systemTemp.createTemp('vault_sync_test_');
     vaultPath = '${tempDir.path}/vault.enc';
     repository = VaultRepository(
@@ -138,6 +145,7 @@ void main() {
       gatewayClient: mockGateway,
       vaultKeyService: mockKeyService,
       repository: repository,
+      deviceKeyService: mockDeviceKeyService,
     );
 
     when(() => mockKeyService.hasVaultKey()).thenAnswer((_) async => true);
@@ -338,7 +346,9 @@ void main() {
   test(
       'cache local à frente do on-chain (mudanças pendentes não publicadas) — '
       'não sobrescreve nem busca no IPFS', () async {
-    // Simula 2 edições locais feitas neste device, nunca publicadas.
+    // Simula 2 edições locais feitas neste device (com permissão de escrita),
+    // nunca publicadas.
+    await repository.setDevicePermission('0xMyDevice', true);
     await repository.addEntry(site: 'local-only.com', username: 'u', password: 'p');
     await repository.addEntry(site: 'local-only-2.com', username: 'u', password: 'p');
     final localBlobBefore = await File(vaultPath).readAsBytes();
@@ -409,6 +419,73 @@ void main() {
     expect(outcome.status, VaultSyncStatus.synced);
     verifyNever(() => mockGateway.fetch(any()));
     expect(await repository.pendingChanges(), 0);
+  });
+
+  test(
+      'device somente leitura com "mudanças pendentes" de sobra (import de '
+      'backup) puxa a publicação nova e guarda cópia do vault local '
+      '(bug real: celular preso com itens apagados e read-only)', () async {
+    // Celular com backup importado: 2 itens que nunca foram publicados por
+    // ele, contador de edições alto, e sem permissão de escrita.
+    await repository.overwriteCache(Uint8List.fromList(utf8.encode(jsonEncode({
+      'version': 28,
+      'entries': [_entry('velho-1.com'), _entry('velho-2.com')],
+    }))));
+    expect(await repository.pendingChanges(), greaterThan(0));
+    final localBlobBefore = await File(vaultPath).readAsBytes();
+
+    // Desktop apagou tudo, deu can-write ao celular e publicou (chain na 6).
+    final newBytes = Uint8List.fromList(utf8.encode(jsonEncode({
+      'version': 30,
+      'entries': <Map<String, dynamic>>[],
+      'device_permissions': [
+        {'pub_key': '0xMyDevice', 'can_write': true},
+      ],
+    })));
+    final digest = bytesToHex(keccak256(newBytes), include0x: true);
+    when(() => mockBlockchain.hasVault(identityId))
+        .thenAnswer((_) async => true);
+    when(() => mockBlockchain.getVault(identityId)).thenAnswer((_) async =>
+        VaultRef(
+            cid: 'bafyTestCid',
+            contentHashHex: digest,
+            updatedAt: updatedAt,
+            version: 6));
+    when(() => mockGateway.fetch('bafyTestCid'))
+        .thenAnswer((_) async => newBytes);
+
+    final outcome = await syncService.sync(identityId);
+
+    expect(outcome.status, VaultSyncStatus.synced);
+    expect(outcome.entries, isEmpty);
+    expect(await repository.canWriteVault('0xMyDevice'), isTrue);
+    expect(await repository.lastSyncedChainVersion(), 6);
+    expect(await File('$vaultPath.before-sync').readAsBytes(),
+        equals(localBlobBefore));
+  });
+
+  test(
+      'device com permissão de escrita e mudanças pendentes NÃO é '
+      'sobrescrito por uma publicação nova', () async {
+    await repository.setDevicePermission('0xMyDevice', true);
+    await repository.addEntry(site: 'meu-novo.com', username: 'u', password: 'p');
+    final localBlobBefore = await File(vaultPath).readAsBytes();
+
+    when(() => mockBlockchain.hasVault(identityId))
+        .thenAnswer((_) async => true);
+    when(() => mockBlockchain.getVault(identityId)).thenAnswer((_) async =>
+        VaultRef(
+            cid: 'bafyTestCid',
+            contentHashHex: wrongHash,
+            updatedAt: updatedAt,
+            version: 1));
+
+    final outcome = await syncService.sync(identityId);
+
+    expect(outcome.entries.map((e) => e.site), contains('meu-novo.com'));
+    verifyNever(() => mockGateway.fetch(any()));
+    expect(await File(vaultPath).readAsBytes(), equals(localBlobBefore));
+    expect(File('$vaultPath.before-sync').existsSync(), isFalse);
   });
 
   test(

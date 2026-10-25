@@ -1,6 +1,7 @@
 import 'package:web3dart/crypto.dart';
 
 import 'blockchain_service.dart';
+import 'device_key_service.dart';
 import 'ipfs_gateway_client.dart';
 import 'storage_pointer.dart';
 import 'vault_blob_fetcher.dart';
@@ -61,7 +62,9 @@ class VaultSyncService {
     VaultBlobFetcher? gatewayClient,
     VaultKeyService? vaultKeyService,
     VaultRepository? repository,
+    DeviceKeyService? deviceKeyService,
   })  : _blockchain = blockchainService ?? BlockchainService(),
+        _deviceKeyService = deviceKeyService ?? DeviceKeyService(),
         _gateway = gatewayClient ?? IpfsGatewayClient(),
         _vaultKeyService = vaultKeyService ?? VaultKeyService(),
         _repository = repository ?? VaultRepository();
@@ -70,6 +73,20 @@ class VaultSyncService {
   final VaultBlobFetcher _gateway;
   final VaultKeyService _vaultKeyService;
   final VaultRepository _repository;
+  final DeviceKeyService _deviceKeyService;
+
+  // Este device não tem permissão de escrita no vault (ou nunca recebeu uma):
+  // mudanças locais pendentes nele não têm como ser publicadas, então não são
+  // trabalho a proteger. Falha ao ler o endereço/permissão conta como "pode
+  // escrever" — o comportamento conservador de sempre.
+  Future<bool> _isReadOnlyDevice() async {
+    try {
+      final address = await _deviceKeyService.getDeviceAddress();
+      return !await _repository.canWriteVault(address);
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<VaultSyncOutcome> sync(BigInt identityId) async {
     // Checagem local, sem rede: device pareado que nunca recebeu a vault key
@@ -136,7 +153,18 @@ class VaultSyncService {
       // mudou permissão/perfil (achado real: can-write concedido no Desktop
       // não chegava ao Mobile). Sem pendência local e com a chain além do
       // último sync, puxa mesmo assim.
-      final chainAhead = await _repository.pendingChanges() == 0 &&
+      //
+      // Pendência local num device somente leitura não bloqueia o pull: ele
+      // não consegue publicar aquilo, e o resto sobra de um import de backup.
+      // Achado real (2026-10-25): celular read-only ficou preso no estado
+      // antigo (itens apagados + read-only) mesmo com a publicação nova na
+      // chain, porque o import do backup deixou "mudanças pendentes".
+      final pending = await _repository.pendingChanges();
+      // Versões iguais = mesma linhagem (device recém-pareado): não é o caso.
+      final readOnly = pending > 0 &&
+          ref.version != localVersion &&
+          await _isReadOnlyDevice();
+      final chainAhead = (pending == 0 || readOnly) &&
           ref.version > await _repository.lastSyncedChainVersion();
       if (ref.version <= localVersion && !chainAhead) {
         // Local já reflete (ou está à frente d)o on-chain. Só quando as duas
@@ -160,6 +188,11 @@ class VaultSyncService {
           updatedAt: ref.updatedAt,
           legacyIpfsCid: StoragePointerKind.of(ref.cid) == StoragePointerKind.legacyIpfs,
         );
+      }
+
+      // Vai sobrescrever um cache com pendências: guarda uma cópia antes.
+      if (pending > 0 && chainAhead) {
+        await _repository.keepCopyOfLocalVault();
       }
 
       final bytes = await _gateway.fetch(ref.cid);
