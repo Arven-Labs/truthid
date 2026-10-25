@@ -642,18 +642,25 @@ class BlockchainService {
 
   Future<Uint8List?> getDeviceVaultKey(String address) async {
     try {
-      final fn = _deviceContract.function('deviceVaultKeys');
-      final result = await _ethCall(
-        _deviceRegistryAddress,
-        fn,
-        [EthereumAddress.fromHex(address)],
-      );
-      final bytes = result[0] as List<int>;
-      if (bytes.isEmpty) return null;
-      return Uint8List.fromList(bytes);
+      return await getDeviceVaultKeyOrThrow(address);
     } catch (_) {
       return null;
     }
+  }
+
+  // Igual a `getDeviceVaultKey`, mas deixa a falha de rede/RPC subir em vez de
+  // virar `null` — quem precisa distinguir "nada entregue pra este device" de
+  // "não consegui perguntar" (retry da vault key no Vault) usa esta.
+  Future<Uint8List?> getDeviceVaultKeyOrThrow(String address) async {
+    final fn = _deviceContract.function('deviceVaultKeys');
+    final result = await _ethCall(
+      _deviceRegistryAddress,
+      fn,
+      [EthereumAddress.fromHex(address)],
+    );
+    final bytes = result[0] as List<int>;
+    if (bytes.isEmpty) return null;
+    return Uint8List.fromList(bytes);
   }
 
   // Resolve o controller (endereço da smart account, desde o débito #17) e o

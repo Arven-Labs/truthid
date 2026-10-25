@@ -1813,6 +1813,18 @@
   "@vaultDevicePermissionsScreenReadOnly": {
     "description": "Badge label for a device row that has read-only permission in this Vault"
   },
+  "vaultScreenVaultKeyNotDeliveredSnackbar": "No se entregó ninguna clave del vault a este dispositivo. En el escritorio, abre Gestionar dispositivos y usa “Redistribuir clave del vault”.",
+  "@vaultScreenVaultKeyNotDeliveredSnackbar": {
+    "description": "Snackbar when the vault key retry finds nothing delivered to this device on-chain."
+  },
+  "vaultScreenVaultKeyDecryptFailedSnackbar": "Se encontró una clave del vault para este dispositivo, pero no se pudo descifrar. Vuelve a emparejar este dispositivo desde el escritorio.",
+  "@vaultScreenVaultKeyDecryptFailedSnackbar": {
+    "description": "Snackbar when a vault key exists on-chain for this device but cannot be decrypted."
+  },
+  "vaultScreenVaultKeyNetworkSnackbar": "No se pudo acceder a la red para comprobar la clave del vault. Revisa tu conexión e inténtalo de nuevo.",
+  "@vaultScreenVaultKeyNetworkSnackbar": {
+    "description": "Snackbar when the vault key retry cannot reach the network."
+  },
   "vaultScreenVaultKeyUnavailableSnackbar": "La clave del vault todavía no está disponible on-chain.",
   "@vaultScreenVaultKeyUnavailableSnackbar": {
     "description": "Snackbar shown on the Vault screen when the vault key still isn't available on-chain after a retry."
@@ -1886,7 +1898,7 @@
   "@vaultScreenNoVaultKeyTitle": {
     "description": "Empty-state title shown when the vault key is not available."
   },
-  "vaultScreenNoVaultKeySubtitle": "Esto puede pasar si la app se interrumpió durante el emparejamiento. No necesitas volver a emparejar — solo intenta de nuevo.",
+  "vaultScreenNoVaultKeySubtitle": "Esto puede pasar si la app se interrumpió durante el emparejamiento. Inténtalo de nuevo; si sigue fallando, en el escritorio abre Gestionar dispositivos y usa “Redistribuir clave del vault”.",
   "@vaultScreenNoVaultKeySubtitle": {
     "description": "Empty-state subtitle shown when the vault key is not available."
   },

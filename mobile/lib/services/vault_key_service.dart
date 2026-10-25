@@ -8,6 +8,8 @@ import 'device_key_service.dart';
 import 'ecies_service.dart';
 import 'hkdf_util.dart';
 
+enum VaultKeyRecovery { recovered, notDelivered, decryptFailed, networkError }
+
 class VaultKeyService {
   static const _storage = FlutterSecureStorage();
   static const _storageKey = 'truthid_vault_key';
@@ -62,6 +64,28 @@ class VaultKeyService {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  // Como `tryRecoverFromChain`, mas diz POR QUE não recuperou — o "tente de
+  // novo" genérico enganava: com a chave on-chain vazia tentar de novo nunca
+  // resolve (o caminho é "Redistribute vault key" no Desktop).
+  Future<VaultKeyRecovery> recoverFromChainWithReason(
+      BlockchainService blockchain) async {
+    final address = await _deviceKeyService.getDeviceAddress();
+    final Uint8List? encryptedKey;
+    try {
+      encryptedKey = await blockchain.getDeviceVaultKeyOrThrow(address);
+    } catch (_) {
+      return VaultKeyRecovery.networkError;
+    }
+    if (encryptedKey == null) return VaultKeyRecovery.notDelivered;
+
+    try {
+      await decryptVaultKeyFromPairing(encryptedKey);
+      return VaultKeyRecovery.recovered;
+    } catch (_) {
+      return VaultKeyRecovery.decryptFailed;
     }
   }
 

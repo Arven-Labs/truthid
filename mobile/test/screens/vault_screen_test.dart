@@ -169,8 +169,8 @@ void main() {
     when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
         const VaultSyncOutcome(
             status: VaultSyncStatus.noVaultKey, entries: []));
-    when(() => mockVaultKeyService.tryRecoverFromChain(mockBlockchain))
-        .thenAnswer((_) async => true);
+    when(() => mockVaultKeyService.recoverFromChainWithReason(mockBlockchain))
+        .thenAnswer((_) async => VaultKeyRecovery.recovered);
 
     await tester.pumpWidget(buildScreen());
     await tester.pumpAndSettle();
@@ -183,7 +183,7 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
 
-    verify(() => mockVaultKeyService.tryRecoverFromChain(mockBlockchain))
+    verify(() => mockVaultKeyService.recoverFromChainWithReason(mockBlockchain))
         .called(1);
     expect(find.text('example.com'), findsOneWidget);
   });
@@ -193,8 +193,8 @@ void main() {
     when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
         const VaultSyncOutcome(
             status: VaultSyncStatus.noVaultKey, entries: []));
-    when(() => mockVaultKeyService.tryRecoverFromChain(mockBlockchain))
-        .thenAnswer((_) async => false);
+    when(() => mockVaultKeyService.recoverFromChainWithReason(mockBlockchain))
+        .thenAnswer((_) async => VaultKeyRecovery.notDelivered);
 
     await tester.pumpWidget(buildScreen());
     await tester.pumpAndSettle();
@@ -202,9 +202,45 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
 
-    expect(
-        find.text('Vault key still not available on-chain.'), findsOneWidget);
+    expect(find.textContaining('Redistribute vault key'), findsWidgets);
     expect(find.text('Vault key not available'), findsOneWidget);
+  });
+
+  for (final c in [
+    (VaultKeyRecovery.decryptFailed, 'could not be decrypted'),
+    (VaultKeyRecovery.networkError, "Couldn't reach the network"),
+  ]) {
+    testWidgets('retry com ${c.$1.name} mostra a mensagem certa', (tester) async {
+      when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
+          const VaultSyncOutcome(
+              status: VaultSyncStatus.noVaultKey, entries: []));
+      when(() => mockVaultKeyService.recoverFromChainWithReason(mockBlockchain))
+          .thenAnswer((_) async => c.$1);
+
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining(c.$2), findsOneWidget);
+    });
+  }
+
+  testWidgets('retry que lança não deixa o spinner preso e avisa a rede',
+      (tester) async {
+    when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
+        const VaultSyncOutcome(
+            status: VaultSyncStatus.noVaultKey, entries: []));
+    when(() => mockVaultKeyService.recoverFromChainWithReason(mockBlockchain))
+        .thenThrow(StateError('boom'));
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("Couldn't reach the network"), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
   });
 
   testWidgets('syncFailedNoCache mostra o banner de erro', (tester) async {

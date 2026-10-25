@@ -1813,6 +1813,18 @@
   "@vaultDevicePermissionsScreenReadOnly": {
     "description": "Badge label for a device row that has read-only permission in this Vault"
   },
+  "vaultScreenVaultKeyNotDeliveredSnackbar": "尚未向此设备分发密码库密钥。请在桌面端打开“管理设备”，使用“重新分发密码库密钥”。",
+  "@vaultScreenVaultKeyNotDeliveredSnackbar": {
+    "description": "Snackbar when the vault key retry finds nothing delivered to this device on-chain."
+  },
+  "vaultScreenVaultKeyDecryptFailedSnackbar": "已找到此设备的密码库密钥，但无法解密。请从桌面端重新配对此设备。",
+  "@vaultScreenVaultKeyDecryptFailedSnackbar": {
+    "description": "Snackbar when a vault key exists on-chain for this device but cannot be decrypted."
+  },
+  "vaultScreenVaultKeyNetworkSnackbar": "无法连接网络以检查密码库密钥。请检查网络连接后重试。",
+  "@vaultScreenVaultKeyNetworkSnackbar": {
+    "description": "Snackbar when the vault key retry cannot reach the network."
+  },
   "vaultScreenVaultKeyUnavailableSnackbar": "密码库密钥仍未在链上可用。",
   "@vaultScreenVaultKeyUnavailableSnackbar": {
     "description": "Snackbar shown on the Vault screen when the vault key still isn't available on-chain after a retry."
@@ -1886,7 +1898,7 @@
   "@vaultScreenNoVaultKeyTitle": {
     "description": "Empty-state title shown when the vault key is not available."
   },
-  "vaultScreenNoVaultKeySubtitle": "如果配对过程中应用被中断可能会出现这种情况。无需重新配对 — 只需再试一次。",
+  "vaultScreenNoVaultKeySubtitle": "如果应用在配对过程中被中断，可能会发生这种情况。请重试；如果仍然失败，请在桌面端打开“管理设备”，使用“重新分发密码库密钥”。",
   "@vaultScreenNoVaultKeySubtitle": {
     "description": "Empty-state subtitle shown when the vault key is not available."
   },

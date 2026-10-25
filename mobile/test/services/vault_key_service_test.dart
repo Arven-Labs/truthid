@@ -212,4 +212,40 @@ void main() {
       expect(recovered, isFalse);
     });
   });
+
+  group('recoverFromChainWithReason', () {
+    const address = '0x1234567890123456789012345678901234567890';
+    late MockBlockchainService mockBlockchain;
+
+    setUp(() {
+      mockBlockchain = MockBlockchainService();
+      when(() => mockKeyService.getDeviceAddress())
+          .thenAnswer((_) async => address);
+    });
+
+    test('nada entregue on-chain -> notDelivered', () async {
+      when(() => mockBlockchain.getDeviceVaultKeyOrThrow(address))
+          .thenAnswer((_) async => null);
+
+      expect(await vaultKeyService.recoverFromChainWithReason(mockBlockchain),
+          VaultKeyRecovery.notDelivered);
+    });
+
+    test('falha de rede/RPC -> networkError (não se confunde com notDelivered)',
+        () async {
+      when(() => mockBlockchain.getDeviceVaultKeyOrThrow(address))
+          .thenThrow(Exception('socket closed'));
+
+      expect(await vaultKeyService.recoverFromChainWithReason(mockBlockchain),
+          VaultKeyRecovery.networkError);
+    });
+
+    test('blob on-chain corrompido -> decryptFailed', () async {
+      when(() => mockBlockchain.getDeviceVaultKeyOrThrow(address))
+          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+      expect(await vaultKeyService.recoverFromChainWithReason(mockBlockchain),
+          VaultKeyRecovery.decryptFailed);
+    });
+  });
 }
