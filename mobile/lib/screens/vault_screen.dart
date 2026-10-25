@@ -18,7 +18,6 @@ import '../l10n/l10n_extensions.dart';
 import '../theme.dart';
 import '../widgets/address_summary.dart';
 import '../widgets/card_summary.dart';
-import 'pinning_providers_screen.dart';
 import 'vault_device_permissions_screen.dart';
 import 'vault_entry_detail_screen.dart';
 import 'vault_entry_form_screen.dart';
@@ -394,15 +393,6 @@ class _VaultScreenState extends State<VaultScreen> {
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               if (_canWrite) ...[
-                IconButton(
-                  icon: const Icon(Icons.cloud_outlined),
-                  tooltip: context.l10n.vaultScreenPinningProvidersTooltip,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PinningProvidersScreen(),
-                    ),
-                  ),
-                ),
                 IconButton(
                   icon: const Icon(Icons.sell_outlined),
                   tooltip: context.l10n.vaultScreenManageProfilesTooltip,
