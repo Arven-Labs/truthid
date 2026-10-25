@@ -3026,6 +3026,10 @@
   "@settingsScreenSecuritySubtitle": {
     "description": "Subtitle of the list tile linking to the security screen"
   },
+  "settingsScreenPinningProvidersSubtitle": "高级 — 仅用于与浏览器扩展的审批",
+  "@settingsScreenPinningProvidersSubtitle": {
+    "description": "Subtitle of the Pinning Providers entry in Settings (advanced, only used by the cross-device delivery channel)."
+  },
   "settingsScreenLanguageTitle": "语言",
   "@settingsScreenLanguageTitle": {
     "description": "Title of the list tile that opens the language picker"

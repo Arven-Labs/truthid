@@ -5,6 +5,7 @@ import '../services/locale_service.dart';
 import '../theme.dart';
 import '../l10n/l10n_extensions.dart';
 import 'guardian_status_screen.dart';
+import 'pinning_providers_screen.dart';
 import 'security_screen.dart';
 import 'vault_backup_screen.dart';
 
@@ -287,6 +288,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: const TextStyle(fontSize: 12),
                     ),
                     onTap: () => _showLanguageSheet(context),
+                  ),
+                  const SizedBox(height: 8),
+                  // O vault publica direto no Arweave; os providers de pinning
+                  // só servem ao canal cross-device (dead-drop) das aprovações
+                  // com a extensão — por isso ficam aqui, fora do Vault.
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.cloud_outlined, color: AppColors.textMuted),
+                    title: Text(context.l10n.pinningProvidersScreenTitle),
+                    subtitle: Text(
+                      context.l10n.settingsScreenPinningProvidersSubtitle,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PinningProvidersScreen()),
+                    ),
                   ),
                 ],
               ),
