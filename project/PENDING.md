@@ -201,7 +201,7 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
-### P106 — Tratamento de erros: falhas em silêncio ou cruas em todo o fluxo Enviar/pareamento/sync — 🔧 levantamento (2026-10-25), parte corrigida na v2.2.8
+### P106 — Tratamento de erros: falhas em silêncio ou cruas em todo o fluxo Enviar/pareamento/sync — ✅ implementado (2026-10-25): v2.2.7–2.2.9 + PRs #38–#43 aguardando a 2.2.10; falta validar em aparelho real
 
 **Origem:** o dono do projeto tentou publicar a permissão `can-write` do celular e bateu em 4 erros seguidos, nenhum dizendo a causa: (1) "Bundler not configured" sem dizer onde configurar (agora há tela em Configurações, v2.2.7); (2) `AA24 signature error` cru, porque a chave do desktop não estava registrada nem autorizada na smart account (conferido on-chain; resolvido registrando o desktop em Gerenciar dispositivos); (3) o celular não mudava nada porque `arweave.net/<txid>` devolveu **200 com corpo vazio por ~10 min** depois de publicar, o hash não bateu e o app caiu em silêncio pro cache; (4) o Enviar dizia "sucesso" antes de o dado poder ser baixado. Comentário do dono do projeto: "tá uma bosta isso".
 
@@ -216,9 +216,20 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 6. `useVaultPublish.ts`: ainda não mostra qual etapa falhou (manifesto no Arweave, saldo de AR, assinatura, `updateVault`, confirmação) — item 3 do P105.
 7. Erros do Rust chegam como `String` crua (`Permission denied (os error 13)`); falta mapear os recorrentes pra frase + ação (`chown` em `~/.truthid`, religar o keyring).
 
+**Estado final dos 7 itens (2026-10-25):**
+1. `useUpdateCheck` (PR #43): guarda o motivo da falha da checagem e do download; Configurações ganha "Atualizações" (verificar agora, resultado, download manual); o banner de falha mostra o motivo. A checagem do início continua sem banner quando falha, de propósito.
+2. `vault_key_exists` (PR #43): erro de checagem mostra o motivo + "Tentar de novo" em vez de "destrave o vault"; o Rust abre o arquivo da chave pra expor `Permission denied` na hora.
+3. `SignRequestModal` (PR #39): falha ao responder o app depois de a tx executar não vira `failed`, trava o Aprovar e mostra o hash. **Não feito:** `respondToRequest` (caminho de Rejeitar, 5 modais) segue com `.catch(() => {})` e limpa o pedido — se o Rust já não tem o pedido, limpar é o certo, mas a falha continua invisível.
+4. Mobile `canWriteVault` (PR #40): o erro de leitura aparece num cartão em vez de virar "sem permissão".
+5. Mobile vault key (PR #42): retry diz `notDelivered` / `decryptFailed` / `networkError` (e protege contra exceção); `getDeviceVaultKeyOrThrow` novo. **Não feito:** `VaultSyncService.sync` ainda engole a falha do `tryRecoverFromChain` (best-effort por desenho).
+6. Enviar (PR #41): `PublishStepError` ("Etapa N de 3"), erros do upload traduzidos (sem carteira, saldo em AR, vault vazio, rede); "sem recibo a tempo" deixou de ser reportado como "reverteu".
+7. Erros do Rust: só os dois recorrentes foram mapeados (`utils/systemErrors.ts`: permissão negada + keyring). O resto segue cru.
+
+**Fora do escopo desta rodada (continua em aberto):** os ~80 `catch` vazios do Desktop e os 55 `catch (_)` do Mobile fora dos fluxos acima; e o item 4 do P105 (conferir `getVault` + o manifesto depois do Enviar). Também os textos novos de serviço do Desktop (`bundlerErrors.ts`) estão só em inglês.
+
 **Proposta:** (a) um módulo único de tradução de erros por camada (bundler já feito; Arweave/gateway, keyring/arquivos, wallet) em vez de strings espalhadas; (b) proibir `catch` vazio nos fluxos Enviar/pareamento/sync/updater, sempre com mensagem + ação; (c) textos nos 4 idiomas no Desktop e nos 6 `.arb` do Mobile (hoje as mensagens novas de serviço estão só em inglês); (d) o Enviar confirmar `getVault` + `GET` do manifesto antes de dizer "ok" (P105 item 4); (e) ordem sugerida: 3, 4, 6, 2, 1, 5, 7.
 
-### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — 🐞 achado em 2026-10-18, sync corrigido (branch `fix/mobile-sync-versao-on-chain`)
+### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — ✅ sync corrigido (v2.2.6) e celular read-only com pendência antiga corrigido (v2.2.9, PR #36); ciclo Desktop→Enviar→Celular validado em aparelho real em 2026-10-25; tratamento de erros no P106
 
 **Sintoma (uso real):** o dono do projeto mudou o celular de read-only pra can-write no Desktop, clicou em Enviar, assinou com a wallet e nada mudou no celular. O celular mostrava itens que o Desktop não tinha.
 
