@@ -6,6 +6,9 @@
   "wallet": {
     "title": "钱包"
   },
+  "bundler": {
+    "title": "交易 (Pimlico)"
+  },
   "appLock": {
     "title": "应用锁",
     "explanation": "打开 TruthID 时需要输入密码。可选功能——默认关闭。",

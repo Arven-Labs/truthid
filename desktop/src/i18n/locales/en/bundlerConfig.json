@@ -1,0 +1,11 @@
+{
+  "explanation": "Pimlico API key used to send transactions (bundler). Create a free key at dashboard.pimlico.io. It is stored only on this device.",
+  "loading": "Loading...",
+  "apiKeyLabel": "Pimlico API key",
+  "showKey": "Show key",
+  "hideKey": "Hide key",
+  "networkLabel": "Network",
+  "saveButton": "Save",
+  "saving": "Saving...",
+  "saved": "Saved."
+}

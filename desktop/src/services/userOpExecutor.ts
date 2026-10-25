@@ -73,7 +73,7 @@ export async function executeViaUserOp({
 }): Promise<ExecuteViaUserOpResult> {
   const bundlerConfig = await invoke<BundlerConfig>("get_bundler_config");
   if (!bundlerConfig.api_key) {
-    throw new Error("Bundler not configured — set api_key/network in ~/.truthid/bundler_config.json.");
+    throw new Error("Bundler not configured — open Settings (⚙) → Transactions (Pimlico) and enter your API key.");
   }
 
   const bundlerClient = new PimlicoBundlerClient({
