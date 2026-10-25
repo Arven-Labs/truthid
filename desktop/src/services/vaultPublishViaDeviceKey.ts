@@ -4,6 +4,8 @@ import { encodeFunctionData } from "viem";
 import { VAULT_REGISTRY_ADDRESS, VAULT_REGISTRY_ABI } from "../config/contracts";
 import { executeViaUserOp } from "./userOpExecutor";
 import type { PublishResult } from "../types";
+import i18n from "../i18n";
+import { PublishStepError, describeUploadError, errorText } from "../utils/publishErrors";
 
 /**
  * Extraído de `useVaultPublish.ts::handleEnviarViaDeviceKey` — mesma cadeia
@@ -16,8 +18,14 @@ import type { PublishResult } from "../types";
  */
 export async function publishVaultViaDeviceKey(
   smartAccountAddress: Address
-): Promise<{ transactionHash: Hex | null }> {
-  const result = await invoke<PublishResult>("vault_publish");
+): Promise<{ transactionHash: Hex }> {
+  // Etapa 1: manifesto no Arweave.
+  let result: PublishResult;
+  try {
+    result = await invoke<PublishResult>("vault_publish");
+  } catch (e) {
+    throw new PublishStepError("upload", describeUploadError(errorText(e)));
+  }
 
   const callData = encodeFunctionData({
     abi: VAULT_REGISTRY_ABI,
@@ -25,13 +33,26 @@ export async function publishVaultViaDeviceKey(
     args: [result.cid, result.content_hash as `0x${string}`],
   });
 
-  const { transactionHash, success } = await executeViaUserOp({
-    smartAccountAddress,
-    dest: VAULT_REGISTRY_ADDRESS,
-    value: 0n,
-    callData,
-  });
+  // Etapa 2: assinar e enviar a UserOperation.
+  let outcome: Awaited<ReturnType<typeof executeViaUserOp>>;
+  try {
+    outcome = await executeViaUserOp({
+      smartAccountAddress,
+      dest: VAULT_REGISTRY_ADDRESS,
+      value: 0n,
+      callData,
+    });
+  } catch (e) {
+    throw new PublishStepError("sign", errorText(e));
+  }
 
-  if (!success) throw new Error("Failed to publish vault: on-chain transaction reverted");
-  return { transactionHash };
+  // Etapa 3: confirmação. Sem hash = o recibo não apareceu a tempo (a tx pode
+  // confirmar depois); com hash e sem sucesso = reverteu.
+  if (!outcome.transactionHash) {
+    throw new PublishStepError("confirm", i18n.t("publishErrors.notConfirmedYet"));
+  }
+  if (!outcome.success) {
+    throw new PublishStepError("confirm", i18n.t("publishErrors.reverted"));
+  }
+  return { transactionHash: outcome.transactionHash };
 }

@@ -1,0 +1,14 @@
+{
+  "stepPrefix": "Paso {{n}} de 3 — {{name}}",
+  "steps": {
+    "upload": "Subiendo a Arweave",
+    "sign": "Firmando y enviando la transacción",
+    "confirm": "Esperando la confirmación en la cadena"
+  },
+  "noWallet": "No hay una wallet de Arweave configurada en este equipo. Genera o importa una en la pestaña Arweave, añade algo de AR e inténtalo de nuevo.",
+  "insufficientBalance": "La wallet de Arweave no tiene AR suficiente: esta subida necesita {{needed}} AR y la wallet tiene {{has}} AR. Deposita AR en la wallet e inténtalo de nuevo.",
+  "nothingToPublish": "Aún no hay nada que publicar — añade al menos una entrada al vault primero.",
+  "network": "No se pudo conectar con la red de Arweave. Revisa tu conexión a internet e inténtalo de nuevo. ({{raw}})",
+  "reverted": "La transacción se minó pero revirtió en la cadena, así que el vault on-chain no se actualizó.",
+  "notConfirmedYet": "La transacción se envió pero no se confirmó a tiempo. Aún puede confirmarse en un minuto — revisa antes de enviar de nuevo."
+}

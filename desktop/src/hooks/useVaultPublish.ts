@@ -11,6 +11,8 @@ import {
 } from "../config/contracts";
 import { publishVaultViaDeviceKey } from "../services/vaultPublishViaDeviceKey";
 import type { PublishResult } from "../types";
+import { PublishStepError, describeUploadError, errorText } from "../utils/publishErrors";
+import i18n from "../i18n";
 
 // Débito #43: máquina de estados de "publicar o vault" (vault_publish local +
 // updateVault on-chain) extraída do VaultManagement.tsx, mesmo padrão já usado
@@ -114,7 +116,7 @@ export function useVaultPublish(
   useEffect(() => {
     if (!isTxReceiptReady) return;
     if (txReceipt?.status === "reverted") {
-      setPublishError("Transaction reverted on-chain");
+      setPublishError(new PublishStepError("confirm", i18n.t("publishErrors.reverted")).message);
       setPublishState("error");
       resetTx();
       return;
@@ -132,7 +134,7 @@ export function useVaultPublish(
       setPendingUpdate({ cid: result.cid, contentHash: result.content_hash as `0x${string}` });
       setPublishState("idle");
     } catch (e) {
-      setPublishError(String(e));
+      setPublishError(new PublishStepError("upload", describeUploadError(errorText(e))).message);
       setPublishState("error");
     }
   }
@@ -146,13 +148,7 @@ export function useVaultPublish(
         throw new Error("Nenhuma identidade carregada.");
       }
 
-      const { transactionHash } = await publishVaultViaDeviceKey(smartAccountAddress);
-
-      if (!transactionHash) {
-        throw new Error(
-          "UserOperation enviada mas não confirmada a tempo — pode confirmar depois, não é necessariamente um erro."
-        );
-      }
+      await publishVaultViaDeviceKey(smartAccountAddress);
 
       markAsPublished();
       setDeviceKeyPublishState("idle");
@@ -185,7 +181,10 @@ export function useVaultPublish(
     vaultRef,
     publishError,
     showPropagationNote,
-    txErrorMessage: isTxError && txError ? txError.message?.split("\n")[0] ?? null : null,
+    txErrorMessage:
+      isTxError && txError
+        ? new PublishStepError("sign", txError.message?.split("\n")[0] ?? String(txError)).message
+        : null,
     buttonLabel: buttonLabel(),
     buttonDisabled: publishState === "publishing" || isTxPending || isConfirming || justPublished
       || deviceKeyPublishState === "publishing",

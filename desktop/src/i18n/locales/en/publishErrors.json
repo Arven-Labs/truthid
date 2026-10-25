@@ -1,0 +1,14 @@
+{
+  "stepPrefix": "Step {{n}} of 3 — {{name}}",
+  "steps": {
+    "upload": "Uploading to Arweave",
+    "sign": "Signing and sending the transaction",
+    "confirm": "Waiting for on-chain confirmation"
+  },
+  "noWallet": "No Arweave wallet is set up on this computer. Generate or import one in the Arweave tab, add some AR, then try again.",
+  "insufficientBalance": "The Arweave wallet does not have enough AR: this upload needs {{needed}} AR and the wallet has {{has}} AR. Deposit AR into the wallet and try again.",
+  "nothingToPublish": "There is nothing to publish yet — add at least one entry to the vault first.",
+  "network": "Could not reach the Arweave network. Check your internet connection and try again. ({{raw}})",
+  "reverted": "The transaction was mined but reverted on-chain, so the vault on-chain was not updated.",
+  "notConfirmedYet": "The transaction was sent but not confirmed in time. It may still confirm in a minute — check before sending again."
+}
