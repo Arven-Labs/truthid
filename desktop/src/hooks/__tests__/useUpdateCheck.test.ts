@@ -48,6 +48,29 @@ describe("useUpdateCheck", () => {
     expect(result.current.status).toBe("idle");
   });
 
+  it("falha no check() guarda o motivo pra Configurações mostrar", async () => {
+    checkMock.mockRejectedValue(new Error("network down"));
+    const { result } = renderHook(() => useUpdateCheck());
+
+    await waitFor(() => expect(result.current.checkState).toBe("failed"));
+    expect(result.current.checkError).toContain("network down");
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("checkNow() refaz a checagem e marca upToDate quando não há versão nova", async () => {
+    checkMock.mockRejectedValueOnce(new Error("network down"));
+    const { result } = renderHook(() => useUpdateCheck());
+    await waitFor(() => expect(result.current.checkState).toBe("failed"));
+
+    checkMock.mockResolvedValue(null);
+    await act(async () => {
+      await result.current.checkNow();
+    });
+
+    expect(result.current.checkState).toBe("upToDate");
+    expect(result.current.checkError).toBeNull();
+  });
+
   it("installUpdate() baixa+instala e vira ready, sem reiniciar sozinho", async () => {
     downloadAndInstallMock.mockResolvedValue(undefined);
     checkMock.mockResolvedValue({
@@ -80,6 +103,7 @@ describe("useUpdateCheck", () => {
     });
 
     expect(result.current.status).toBe("error");
+    expect(result.current.installError).toContain("disk full");
   });
 
   it("restartNow() chama relaunch()", async () => {

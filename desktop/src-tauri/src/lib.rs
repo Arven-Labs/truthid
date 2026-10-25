@@ -203,7 +203,14 @@ fn vault_key_exists() -> Result<bool, String> {
         }
     }
     let path = vault_key_path()?;
-    Ok(path.exists())
+    if !path.exists() {
+        return Ok(false);
+    }
+    // Existe, mas pode não ser legível (ex.: sobra de root em ~/.truthid):
+    // melhor falhar aqui com o erro real do que "Permission denied" no meio
+    // do uso — a UI traduz (P102 item 4).
+    std::fs::File::open(&path).map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 /// Deriva a chave AES-256 do vault a partir de uma assinatura ECDSA da wallet.

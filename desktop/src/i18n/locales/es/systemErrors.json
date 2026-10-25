@@ -1,0 +1,4 @@
+{
+  "permissionDenied": "TruthID no puede leer un archivo en ~/.truthid (permiso denegado). Suele pasar cuando los archivos pertenecen a otro usuario, como root. Arréglalo con: sudo chown -R $USER ~/.truthid — y vuelve a abrir la app. ({{raw}})",
+  "keyringUnavailable": "El llavero del sistema no está disponible, así que TruthID no puede leer sus secretos. Comprueba que el llavero (GNOME Keyring o KDE Wallet) esté instalado, activado y desbloqueado, y vuelve a abrir la app. ({{raw}})"
+}

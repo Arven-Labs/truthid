@@ -69,7 +69,9 @@
     "operationFailed": "操作失败",
     "confirmSignature": "请在钱包中确认签名...",
     "connectToUnlock": "连接钱包以解锁",
-    "unlock": "解锁密码库"
+    "unlock": "解锁密码库",
+    "keyCheckFailed": "无法在此电脑上检查密码库密钥。",
+    "retry": "重试"
   },
   "header": {
     "title": "密码库"

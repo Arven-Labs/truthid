@@ -1,0 +1,4 @@
+{
+  "permissionDenied": "TruthID 无法读取 ~/.truthid 中的文件（权限被拒绝）。这通常是因为这些文件属于其他用户（例如 root）。请运行：sudo chown -R $USER ~/.truthid，然后重新打开应用。（{{raw}}）",
+  "keyringUnavailable": "系统密钥环不可用，TruthID 无法读取其密钥。请确认密钥环（GNOME Keyring 或 KDE Wallet）已安装、启用并已解锁，然后重新打开应用。（{{raw}}）"
+}

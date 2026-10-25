@@ -3,6 +3,15 @@
   "language": {
     "title": "Language"
   },
+  "updates": {
+    "title": "Updates",
+    "checking": "Checking for updates…",
+    "upToDate": "You're on the latest version.",
+    "available": "TruthID {{version}} is available — use “Update now” in the bar at the top.",
+    "failed": "Couldn't check for updates: {{reason}}",
+    "checkNow": "Check for updates",
+    "downloadManually": "Download manually"
+  },
   "wallet": {
     "title": "Wallet"
   },
