@@ -3,6 +3,15 @@
   "language": {
     "title": "语言"
   },
+  "updates": {
+    "title": "更新",
+    "checking": "正在检查更新…",
+    "upToDate": "您使用的已是最新版本。",
+    "available": "TruthID {{version}} 可用 — 请使用顶部栏中的“立即更新”。",
+    "failed": "无法检查更新：{{reason}}",
+    "checkNow": "检查更新",
+    "downloadManually": "手动下载"
+  },
   "wallet": {
     "title": "钱包"
   },

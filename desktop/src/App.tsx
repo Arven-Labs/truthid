@@ -75,7 +75,16 @@ function App() {
   const queryClient = useQueryClient();
 
   const { username: storedUsername, save: saveUsername, clear: clearUsername } = useStoredUsername();
-  const { status: updateStatus, updateVersion, installUpdate, restartNow } = useUpdateCheck();
+  const {
+    status: updateStatus,
+    updateVersion,
+    installUpdate,
+    restartNow,
+    checkState,
+    checkError,
+    installError,
+    checkNow,
+  } = useUpdateCheck();
   const [updateDismissed, setUpdateDismissed] = useState(false);
   const { needsBackup, markConfirmed } = useLocalWalletBackupGate();
   const { isLocked, unlock, reset } = useAppLock();
@@ -297,7 +306,10 @@ function App() {
             )}
             {updateStatus === "error" && (
               <>
-                <span>⬆ {t("app.updateBanner.error")}</span>
+                <span>
+                  ⬆ {t("app.updateBanner.error")}
+                  {installError ? `: ${installError}` : ""}
+                </span>
                 <a
                   href="https://github.com/masterlxz/truthid/releases/latest"
                   target="_blank"
@@ -396,6 +408,7 @@ function App() {
                       onClose={() => setSettingsOpen(false)}
                       onMigrationBusyChange={setSettingsBusy}
                       onVaultChanged={() => setVaultReloadKey((k) => k + 1)}
+                      updater={{ checkState, checkError, updateVersion, checkNow }}
                     />
                   </div>
                 </div>

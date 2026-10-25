@@ -8,6 +8,7 @@ import { VaultBackup } from "./VaultBackup";
 import { BitwardenImport } from "./BitwardenImport";
 import { GuardianManagement } from "./GuardianManagement";
 import { SecretStorageWarning } from "./SecretStorageWarning";
+import type { CheckState } from "../hooks/useUpdateCheck";
 
 type LockPhase = "idle" | "enabling" | "disabling";
 
@@ -21,10 +22,19 @@ export function Settings({
   onClose,
   onMigrationBusyChange,
   onVaultChanged,
+  updater,
 }: {
   onClose: () => void;
   onMigrationBusyChange?: (busy: boolean) => void;
   onVaultChanged?: () => void;
+  // Estado da checagem de atualização (vem do App, dono do hook). Opcional:
+  // sem ele a seção "Atualizações" não aparece.
+  updater?: {
+    checkState: CheckState;
+    checkError: string | null;
+    updateVersion: string | null;
+    checkNow: () => Promise<void>;
+  };
 }) {
   const { t } = useTranslation();
 
@@ -95,6 +105,35 @@ export function Settings({
         <h3 style={{ marginTop: 0 }}>{t("settings.wallet.title")}</h3>
         <MigrateWallet onClose={onClose} onBusyChange={onMigrationBusyChange} />
       </div>
+
+      {updater && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>{t("settings.updates.title")}</h3>
+          {updater.checkState === "checking" && <p className="muted">{t("settings.updates.checking")}</p>}
+          {updater.checkState === "upToDate" && <p className="muted">{t("settings.updates.upToDate")}</p>}
+          {updater.updateVersion && updater.checkState !== "checking" && (
+            <p className="muted">{t("settings.updates.available", { version: updater.updateVersion })}</p>
+          )}
+          {updater.checkState === "failed" && (
+            <p className="error-text">{t("settings.updates.failed", { reason: updater.checkError })}</p>
+          )}
+          <div className="actions-row">
+            <button onClick={() => void updater.checkNow()} disabled={updater.checkState === "checking"}>
+              {t("settings.updates.checkNow")}
+            </button>
+            {updater.checkState === "failed" && (
+              <a
+                href="https://github.com/masterlxz/truthid/releases/latest"
+                target="_blank"
+                rel="noreferrer"
+                className="update-banner-link"
+              >
+                {t("settings.updates.downloadManually")}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>{t("settings.bundler.title")}</h3>

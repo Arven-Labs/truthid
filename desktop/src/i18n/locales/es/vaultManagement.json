@@ -69,7 +69,9 @@
     "operationFailed": "la operación falló",
     "confirmSignature": "Confirmando firma en la wallet...",
     "connectToUnlock": "Conecta la wallet para desbloquear",
-    "unlock": "Desbloquear vault"
+    "unlock": "Desbloquear vault",
+    "keyCheckFailed": "No se pudo comprobar la clave del vault en este equipo.",
+    "retry": "Reintentar"
   },
   "header": {
     "title": "Vault"

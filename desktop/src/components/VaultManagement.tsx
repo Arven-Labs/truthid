@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -23,6 +23,7 @@ import type {
 import { useVaultPublish } from "../hooks/useVaultPublish";
 import { TotpCode } from "./TotpCode";
 import { TotpQrScanner } from "./TotpQrScanner";
+import { describeSystemError } from "../utils/systemErrors";
 import { parseTotpSecret } from "../utils/totp";
 import { decodeQrFromImageBytes } from "../utils/qrDecode";
 import { PasskeyBadge } from "./PasskeyBadge";
@@ -861,9 +862,25 @@ export function VaultManagement() {
     error: signKeyErr,
   } = useSignMessage();
 
-  useEffect(() => {
-    invoke<boolean>("vault_key_exists").then(setVaultKeyReady).catch(() => setVaultKeyReady(false));
+  // Falha ao checar a chave NÃO é "chave ausente": antes o catch virava
+  // `false` e a tela pedia pra destravar o vault, escondendo erros de
+  // permissão/keyring (P102 itens 4 e 5). Agora mostra o motivo e deixa tentar
+  // de novo.
+  const [vaultKeyCheckError, setVaultKeyCheckError] = useState<string | null>(null);
+  const checkVaultKey = useCallback(() => {
+    setVaultKeyCheckError(null);
+    setVaultKeyReady(null);
+    invoke<boolean>("vault_key_exists")
+      .then(setVaultKeyReady)
+      .catch((e) => {
+        setVaultKeyCheckError(describeSystemError(String(e)));
+        setVaultKeyReady(false);
+      });
   }, []);
+
+  useEffect(() => {
+    checkVaultKey();
+  }, [checkVaultKey]);
 
   useEffect(() => {
     if (!vaultKeySignature) return;
@@ -1136,6 +1153,17 @@ export function VaultManagement() {
   // ── Guard: vault key ─────────────────────────────────────────────────────
   if (vaultKeyReady === null) {
     return <div className="card"><p className="muted">{t("vaultManagement.unlockVault.checking")}</p></div>;
+  }
+
+  if (!vaultKeyReady && vaultKeyCheckError) {
+    return (
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>{t("vaultManagement.unlockVault.title")}</h2>
+        <p className="error-text">{t("vaultManagement.unlockVault.keyCheckFailed")}</p>
+        <p className="muted" style={{ lineHeight: "1.5" }}>{vaultKeyCheckError}</p>
+        <button onClick={checkVaultKey}>{t("vaultManagement.unlockVault.retry")}</button>
+      </div>
+    );
   }
 
   if (!vaultKeyReady) {

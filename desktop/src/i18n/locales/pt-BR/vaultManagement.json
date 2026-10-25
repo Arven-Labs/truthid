@@ -69,7 +69,9 @@
     "operationFailed": "operação falhou",
     "confirmSignature": "Confirme a assinatura na carteira...",
     "connectToUnlock": "Conecte a carteira para desbloquear",
-    "unlock": "Desbloquear vault"
+    "unlock": "Desbloquear vault",
+    "keyCheckFailed": "Não consegui verificar a chave do vault neste computador.",
+    "retry": "Tentar de novo"
   },
   "header": {
     "title": "Vault"

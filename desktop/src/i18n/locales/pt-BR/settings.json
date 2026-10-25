@@ -3,6 +3,15 @@
   "language": {
     "title": "Idioma"
   },
+  "updates": {
+    "title": "Atualizações",
+    "checking": "Verificando atualizações…",
+    "upToDate": "Você está na versão mais recente.",
+    "available": "O TruthID {{version}} está disponível — use “Atualizar agora” na barra no topo.",
+    "failed": "Não consegui verificar atualizações: {{reason}}",
+    "checkNow": "Verificar atualizações",
+    "downloadManually": "Baixar manualmente"
+  },
   "wallet": {
     "title": "Wallet"
   },

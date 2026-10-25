@@ -69,7 +69,9 @@
     "operationFailed": "operation failed",
     "confirmSignature": "Confirm signature on wallet...",
     "connectToUnlock": "Connect wallet to unlock",
-    "unlock": "Unlock vault"
+    "unlock": "Unlock vault",
+    "keyCheckFailed": "Couldn't check the vault key on this computer.",
+    "retry": "Try again"
   },
   "header": {
     "title": "Vault"

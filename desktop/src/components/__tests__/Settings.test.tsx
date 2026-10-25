@@ -96,4 +96,27 @@ describe("Settings", () => {
 
     expect(await screen.findByText(/senha incorreta/)).toBeInTheDocument();
   });
+
+  it("mostra o motivo quando a checagem de atualização falha e deixa checar de novo", async () => {
+    setupInvoke(false);
+    const checkNow = vi.fn().mockResolvedValue(undefined);
+    render(
+      <Settings
+        onClose={vi.fn()}
+        updater={{ checkState: "failed", checkError: "Error: network down", updateVersion: null, checkNow }}
+      />,
+    );
+
+    expect(await screen.findByText(/Couldn't check for updates: Error: network down/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Download manually" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(checkNow).toHaveBeenCalled();
+  });
+
+  it("sem updater a seção de atualizações não aparece", async () => {
+    setupInvoke(false);
+    render(<Settings onClose={vi.fn()} />);
+    await screen.findByRole("button", { name: "Enable app lock" });
+    expect(screen.queryByText("Updates")).not.toBeInTheDocument();
+  });
 });
