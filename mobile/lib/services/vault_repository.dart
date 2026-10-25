@@ -685,6 +685,17 @@ class VaultRepository {
     ));
   }
 
+  // Copia o vault local atual pra `vault.enc.before-sync` (sobrescrevendo uma
+  // cópia anterior) antes de um pull que vai trocá-lo apesar de haver
+  // mudanças pendentes — nada some sem deixar rastro recuperável.
+  Future<void> keepCopyOfLocalVault() async {
+    final path = await _vaultPath();
+    final file = File(path);
+    if (await file.exists()) {
+      await file.copy('$path.before-sync');
+    }
+  }
+
   // Permissão de escrita do device `myPubKey`. `false` por padrão — um
   // device precisa ter sido explicitamente autorizado pelo Desktop.
   Future<bool> canWriteVault(String myPubKey) async {
