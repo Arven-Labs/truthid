@@ -133,14 +133,26 @@ class _VaultScreenState extends State<VaultScreen> {
   Future<void> _retryVaultKey() async {
     setState(() => _isRetryingVaultKey = true);
 
-    final recovered = await _vaultKeyService.tryRecoverFromChain(_blockchain);
-    if (recovered) {
+    VaultKeyRecovery result;
+    try {
+      result = await _vaultKeyService.recoverFromChainWithReason(_blockchain);
+    } catch (_) {
+      // Qualquer falha inesperada: antes o spinner ficava preso e nada era
+      // dito. Trata como falha de rede (o caso mais provável).
+      result = VaultKeyRecovery.networkError;
+    }
+
+    if (result == VaultKeyRecovery.recovered) {
       await _load();
     } else if (mounted) {
+      final l10n = context.l10n;
+      final message = switch (result) {
+        VaultKeyRecovery.notDelivered => l10n.vaultScreenVaultKeyNotDeliveredSnackbar,
+        VaultKeyRecovery.decryptFailed => l10n.vaultScreenVaultKeyDecryptFailedSnackbar,
+        _ => l10n.vaultScreenVaultKeyNetworkSnackbar,
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.vaultScreenVaultKeyUnavailableSnackbar),
-        ),
+        SnackBar(content: Text(message), duration: const Duration(seconds: 8)),
       );
     }
 

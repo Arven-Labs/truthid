@@ -1813,6 +1813,18 @@
   "@vaultDevicePermissionsScreenReadOnly": {
     "description": "Badge label for a device row that has read-only permission in this Vault"
   },
+  "vaultScreenVaultKeyNotDeliveredSnackbar": "No vault key was delivered to this device. On the desktop, open Manage devices and use “Redistribute vault key”.",
+  "@vaultScreenVaultKeyNotDeliveredSnackbar": {
+    "description": "Snackbar when the vault key retry finds nothing delivered to this device on-chain."
+  },
+  "vaultScreenVaultKeyDecryptFailedSnackbar": "A vault key was found for this device but it could not be decrypted. Re-pair this device from the desktop.",
+  "@vaultScreenVaultKeyDecryptFailedSnackbar": {
+    "description": "Snackbar when a vault key exists on-chain for this device but cannot be decrypted."
+  },
+  "vaultScreenVaultKeyNetworkSnackbar": "Couldn't reach the network to check the vault key. Check your connection and try again.",
+  "@vaultScreenVaultKeyNetworkSnackbar": {
+    "description": "Snackbar when the vault key retry cannot reach the network."
+  },
   "vaultScreenVaultKeyUnavailableSnackbar": "Vault key still not available on-chain.",
   "@vaultScreenVaultKeyUnavailableSnackbar": {
     "description": "Snackbar shown on the Vault screen when the vault key still isn't available on-chain after a retry."
@@ -1882,7 +1894,7 @@
   "@vaultScreenNoVaultKeyTitle": {
     "description": "Empty-state title shown when the vault key is not available."
   },
-  "vaultScreenNoVaultKeySubtitle": "This can happen if the app was interrupted during pairing. No need to re-pair — just try again.",
+  "vaultScreenNoVaultKeySubtitle": "This can happen if the app was interrupted during pairing. Try again; if it keeps failing, on the desktop open Manage devices and use “Redistribute vault key”.",
   "@vaultScreenNoVaultKeySubtitle": {
     "description": "Empty-state subtitle shown when the vault key is not available."
   },
