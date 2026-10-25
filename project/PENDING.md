@@ -201,6 +201,23 @@ facilitado), P15/P16 (monetização/session key com limite de gasto), P14 (polis
 
 ## Não Resolvidas
 
+### P106 — Tratamento de erros: falhas em silêncio ou cruas em todo o fluxo Enviar/pareamento/sync — 🔧 levantamento (2026-10-25), parte corrigida na v2.2.8
+
+**Origem:** o dono do projeto tentou publicar a permissão `can-write` do celular e bateu em 4 erros seguidos, nenhum dizendo a causa: (1) "Bundler not configured" sem dizer onde configurar (agora há tela em Configurações, v2.2.7); (2) `AA24 signature error` cru, porque a chave do desktop não estava registrada nem autorizada na smart account (conferido on-chain; resolvido registrando o desktop em Gerenciar dispositivos); (3) o celular não mudava nada porque `arweave.net/<txid>` devolveu **200 com corpo vazio por ~10 min** depois de publicar, o hash não bateu e o app caiu em silêncio pro cache; (4) o Enviar dizia "sucesso" antes de o dado poder ser baixado. Comentário do dono do projeto: "tá uma bosta isso".
+
+**Corrigido (v2.2.7/v2.2.8, PRs #30, #32, #33):** tela do Pimlico em Configurações; `utils/bundlerErrors.ts` traduz AA21/AA24/AA25 e erros HTTP do Pimlico; `executeViaUserOp` confere `authorizedDevices` antes de chamar o bundler; gateway Arweave: corpo vazio vira falha, tenta `/raw/<txid>`, banner do Vault mostra o motivo; nota de propagação após publicar.
+
+**Levantamento (contagem por grep, 2026-10-25):** Desktop TS ~80 `catch` vazios ou que engolem o erro e 53 `String(e)` mostrados crus; Mobile 55 `catch (_)`; `lib.rs` 18 `unwrap()/expect(`. Os que mais pesam no fluxo:
+1. `useUpdateCheck.ts`: falha do updater é silenciosa de propósito; quando a atualização não aparece o usuário não sabe se não há versão nova ou se a checagem quebrou. Mostrar "não consegui checar" com motivo, e um botão "Verificar agora".
+2. `VaultManagement.tsx` (`vault_key_exists` → `catch → false`): erro de keyring (`Permission denied`, KWallet desligado — P102 itens 4 e 5) vira "destrave o vault", mascarando a causa real.
+3. `respondToRequest.ts` e `SignRequestModal.tsx`: a resposta ao Rust é `.catch(() => {})`; se falhar, o pedido some da tela como se tivesse sido respondido.
+4. Mobile `vault_screen.dart` (checagem de `canWriteVault`/`pendingChanges`): `catch → canWrite=false`; um erro de leitura esconde o botão de enviar sem aviso, igual a "não tem permissão".
+5. Mobile `vault_sync_service.dart`: `tryRecoverFromChain` engole qualquer falha; "Vault key not available… just try again" aparece também quando a chave on-chain está vazia e tentar de novo nunca resolve (P102 item 3).
+6. `useVaultPublish.ts`: ainda não mostra qual etapa falhou (manifesto no Arweave, saldo de AR, assinatura, `updateVault`, confirmação) — item 3 do P105.
+7. Erros do Rust chegam como `String` crua (`Permission denied (os error 13)`); falta mapear os recorrentes pra frase + ação (`chown` em `~/.truthid`, religar o keyring).
+
+**Proposta:** (a) um módulo único de tradução de erros por camada (bundler já feito; Arweave/gateway, keyring/arquivos, wallet) em vez de strings espalhadas; (b) proibir `catch` vazio nos fluxos Enviar/pareamento/sync/updater, sempre com mensagem + ação; (c) textos nos 4 idiomas no Desktop e nos 6 `.arb` do Mobile (hoje as mensagens novas de serviço estão só em inglês); (d) o Enviar confirmar `getVault` + `GET` do manifesto antes de dizer "ok" (P105 item 4); (e) ordem sugerida: 3, 4, 6, 2, 1, 5, 7.
+
 ### P105 — "Enviar" (publish do Vault): sync do Mobile ignorava publicação nova + sem tratamento de erro — 🐞 achado em 2026-10-18, sync corrigido (branch `fix/mobile-sync-versao-on-chain`)
 
 **Sintoma (uso real):** o dono do projeto mudou o celular de read-only pra can-write no Desktop, clicou em Enviar, assinou com a wallet e nada mudou no celular. O celular mostrava itens que o Desktop não tinha.
