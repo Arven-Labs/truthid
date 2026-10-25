@@ -1866,6 +1866,10 @@
   "@vaultScreenReadOnlyHint": {
     "description": "Hint text shown on the Vault screen when this device is read-only."
   },
+  "vaultScreenPermissionReadFailed": "无法读取此设备的写入权限，因此已隐藏编辑功能。下拉以重试。",
+  "@vaultScreenPermissionReadFailed": {
+    "description": "Shown on the Vault screen when the local write permission of this device could not be read, so editing controls are hidden."
+  },
   "vaultScreenOfflineCacheMessage": "离线 — 正在显示上次同步的条目。",
   "@vaultScreenOfflineCacheMessage": {
     "description": "Message shown on the Vault screen when offline and displaying cached entries."

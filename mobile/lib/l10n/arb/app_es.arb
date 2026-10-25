@@ -1866,6 +1866,10 @@
   "@vaultScreenReadOnlyHint": {
     "description": "Hint text shown on the Vault screen when this device is read-only."
   },
+  "vaultScreenPermissionReadFailed": "No se pudo leer el permiso de escritura de este dispositivo, por eso la edición está oculta. Desliza hacia abajo para reintentar.",
+  "@vaultScreenPermissionReadFailed": {
+    "description": "Shown on the Vault screen when the local write permission of this device could not be read, so editing controls are hidden."
+  },
   "vaultScreenOfflineCacheMessage": "Sin conexión — mostrando entradas de tu última sincronización.",
   "@vaultScreenOfflineCacheMessage": {
     "description": "Message shown on the Vault screen when offline and displaying cached entries."

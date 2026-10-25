@@ -111,6 +111,35 @@ void main() {
     expect(find.text('Device not paired'), findsOneWidget);
   });
 
+  testWidgets(
+      'erro ao ler a permissão de escrita local aparece na tela em vez de '
+      'parecer "sem permissão"', (tester) async {
+    when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
+        VaultSyncOutcome(
+            status: VaultSyncStatus.synced, entries: [buildEntry('a.com')]));
+    when(() => repo.canWriteVault(any()))
+        .thenThrow(StateError('cache ilegível'));
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("Couldn't read this device's write permission"),
+        findsOneWidget);
+    expect(find.textContaining('cache ilegível'), findsOneWidget);
+  });
+
+  testWidgets('leitura da permissão ok não mostra o aviso', (tester) async {
+    when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
+        VaultSyncOutcome(
+            status: VaultSyncStatus.synced, entries: [buildEntry('a.com')]));
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("Couldn't read this device's write permission"),
+        findsNothing);
+  });
+
   testWidgets('noVaultPublished mostra o texto certo', (tester) async {
     when(() => mockSyncService.sync(any())).thenAnswer((_) async =>
         const VaultSyncOutcome(

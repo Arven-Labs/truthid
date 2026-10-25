@@ -99,6 +99,10 @@ class _VaultScreenState extends State<VaultScreen> {
   String _query = '';
 
   bool _canWrite = false;
+  // Motivo de não ter conseguido ler a permissão de escrita local — sem isto
+  // um erro de leitura parecia "dispositivo sem permissão" e escondia o
+  // botão de enviar sem explicação.
+  String? _permissionReadError;
   String? _identityId;
   int _pendingChanges = 0;
   bool _legacyIpfsCid = false;
@@ -191,12 +195,14 @@ class _VaultScreenState extends State<VaultScreen> {
     // pendência conhecida, mas o resultado real do sync ainda chega na tela.
     bool canWrite;
     int pending;
+    String? permissionReadError;
     try {
       canWrite = await _repository.canWriteVault(address);
       pending = await _repository.pendingChanges();
-    } catch (_) {
+    } catch (e) {
       canWrite = false;
       pending = 0;
+      permissionReadError = '$e';
     }
     if (mounted) {
       setState(() {
@@ -206,6 +212,7 @@ class _VaultScreenState extends State<VaultScreen> {
         _error = outcome.error;
         _isLoading = false;
         _canWrite = canWrite;
+        _permissionReadError = permissionReadError;
         _identityId = identityId;
         _pendingChanges = pending;
         _legacyIpfsCid = outcome.legacyIpfsCid;
@@ -448,6 +455,30 @@ class _VaultScreenState extends State<VaultScreen> {
             _buildLegacyStorageBanner(),
           ],
           const SizedBox(height: 12),
+          if (_permissionReadError != null) ...[
+            Card(
+              color: AppColors.infoBg,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.vaultScreenPermissionReadFailed,
+                      style: const TextStyle(color: AppColors.info),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _permissionReadError!,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           if (_status == VaultSyncStatus.offlineUsingCache) ...[
             Card(
               color: AppColors.infoBg,
