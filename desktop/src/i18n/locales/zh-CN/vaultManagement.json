@@ -80,9 +80,10 @@
     "versionSuffix": " 已在链上注册",
     "updatedOn": " · 更新于 {{date}}",
     "notRegistered": "密码库尚未在链上注册",
-    "publishViaDeviceKeyTitle": "使用本地设备密钥签名发布密码库，无需使用 Ledger — 需要已配置 ~/.truthid/bundler_config.json",
+    "publishViaDeviceKeyTitle": "使用本地设备密钥签名发布密码库，无需使用 Ledger — 需要在设置 (⚙) 中配置 Pimlico 密钥",
     "publishingViaDeviceKey": "正在通过设备密钥发布...",
-    "publishViaDeviceKeyButton": "通过设备密钥发布（无需 Ledger）"
+    "publishViaDeviceKeyButton": "通过设备密钥发布（无需 Ledger）",
+    "publishedPropagationNote": "已发布到链上。其他设备可能需要几分钟才能下载此版本（发布后 Arweave 网关可能有延迟）。"
   },
   "migrationNudge": {
     "text": "此密码库仍发布在旧存储（IPFS）上，该存储已不再提供专用固定服务 — 没有本地缓存的新设备可能无法完成配对。请重新发布以迁移到 Arweave。",

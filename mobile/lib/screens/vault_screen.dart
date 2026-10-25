@@ -453,9 +453,25 @@ class _VaultScreenState extends State<VaultScreen> {
               color: AppColors.infoBg,
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  context.l10n.vaultScreenOfflineCacheMessage,
-                  style: const TextStyle(color: AppColors.info),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.vaultScreenOfflineCacheMessage,
+                      style: const TextStyle(color: AppColors.info),
+                    ),
+                    // Motivo real da falha do sync (gateway sem o dado,
+                    // hash que não bate...): sem isto a causa ficava
+                    // invisível e parecia que o sync "não fazia nada".
+                    if (_error != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _error!,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
