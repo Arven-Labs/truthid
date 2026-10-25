@@ -22,6 +22,7 @@ export function useVaultPublish(
   hasVault: boolean | undefined;
   vaultRef: unknown;
   publishError: string | null;
+  showPropagationNote: boolean;
   txErrorMessage: string | null;
   buttonLabel: string;
   buttonDisabled: boolean;
@@ -42,6 +43,10 @@ export function useVaultPublish(
     contentHash: `0x${string}`;
   } | null>(null);
   const [justPublished, setJustPublished] = useState(false);
+  // O Enviar confirma assim que a tx entra na chain, mas o gateway do
+  // Arweave pode levar ~10 min pra servir o manifesto novo (medido) — avisa
+  // que os outros aparelhos podem demorar a enxergar a versão.
+  const [showPropagationNote, setShowPropagationNote] = useState(false);
 
   // Segundo caminho de publicação, ao lado do já existente (Ledger via
   // writeContract acima): assina via device key, sem toque físico, usando o
@@ -120,6 +125,7 @@ export function useVaultPublish(
 
   async function handleEnviar() {
     setPublishError(null);
+    setShowPropagationNote(false);
     setPublishState("publishing");
     try {
       const result = await invoke<PublishResult>("vault_publish");
@@ -133,6 +139,7 @@ export function useVaultPublish(
 
   async function handleEnviarViaDeviceKey() {
     setDeviceKeyError(null);
+    setShowPropagationNote(false);
     setDeviceKeyPublishState("publishing");
     try {
       if (!smartAccountAddress) {
@@ -156,6 +163,7 @@ export function useVaultPublish(
   }
 
   function markAsPublished() {
+    setShowPropagationNote(true);
     refetchHasVault();
     refetchVaultRef();
     onPublished();
@@ -176,6 +184,7 @@ export function useVaultPublish(
     hasVault,
     vaultRef,
     publishError,
+    showPropagationNote,
     txErrorMessage: isTxError && txError ? txError.message?.split("\n")[0] ?? null : null,
     buttonLabel: buttonLabel(),
     buttonDisabled: publishState === "publishing" || isTxPending || isConfirming || justPublished

@@ -958,6 +958,7 @@ export function VaultManagement() {
     hasVault,
     vaultRef,
     publishError,
+    showPropagationNote,
     txErrorMessage,
     buttonLabel,
     buttonDisabled,
@@ -1217,6 +1218,11 @@ export function VaultManagement() {
         {publishError && (
           <p className="error-text" style={{ marginBottom: 0, marginTop: "0.5rem" }}>
             {publishError}
+          </p>
+        )}
+        {showPropagationNote && (
+          <p className="muted" style={{ marginBottom: 0, marginTop: "0.5rem" }}>
+            {t("vaultManagement.status.publishedPropagationNote")}
           </p>
         )}
         {deviceKeyError && (

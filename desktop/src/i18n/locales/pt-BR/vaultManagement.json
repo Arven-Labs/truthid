@@ -80,9 +80,10 @@
     "versionSuffix": " registrada on-chain",
     "updatedOn": " · atualizada em {{date}}",
     "notRegistered": "Vault ainda não registrado on-chain",
-    "publishViaDeviceKeyTitle": "Publica o vault assinando com a chave local do dispositivo, sem usar o Ledger — exige ~/.truthid/bundler_config.json configurado",
+    "publishViaDeviceKeyTitle": "Publica o vault assinando com a chave local do dispositivo, sem usar o Ledger — exige a chave do Pimlico configurada em Configurações (⚙)",
     "publishingViaDeviceKey": "Publicando via chave do dispositivo...",
-    "publishViaDeviceKeyButton": "Publicar via chave do dispositivo (sem Ledger)"
+    "publishViaDeviceKeyButton": "Publicar via chave do dispositivo (sem Ledger)",
+    "publishedPropagationNote": "Publicado na chain. Os outros dispositivos podem levar alguns minutos pra baixar esta versão (o gateway do Arweave pode demorar depois de publicar)."
   },
   "migrationNudge": {
     "text": "Este vault ainda está publicado no armazenamento antigo (IPFS), que não tem mais pinning dedicado — um dispositivo novo sem cache local pode falhar ao parear. Republique para migrar para o Arweave.",

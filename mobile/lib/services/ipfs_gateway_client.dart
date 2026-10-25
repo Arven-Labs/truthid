@@ -40,8 +40,22 @@ class IpfsGatewayClient implements VaultBlobFetcher {
     switch (StoragePointerKind.of(cid)) {
       case StoragePointerKind.arweave:
         final txid = cid.substring(StoragePointerKind.arweavePrefix.length);
-        return await _fetchFromGateway('$arweaveGateway$txid')
-            .timeout(timeout);
+        // `<gateway>/<txid>` redireciona pra um subdomínio sandbox que,
+        // logo depois de uma publicação, responde 200 com corpo vazio por
+        // vários minutos (medido: ~10 min) enquanto `<gateway>/raw/<txid>`
+        // já serve os mesmos bytes. Tenta as duas rotas antes de desistir.
+        final arweaveErrors = <String>[];
+        for (final url in ['$arweaveGateway$txid', '${arweaveGateway}raw/$txid']) {
+          try {
+            return await _fetchFromGateway(url).timeout(timeout);
+          } catch (e) {
+            arweaveErrors.add('$url: $e');
+          }
+        }
+        throw Exception(
+            'The Arweave gateway has not returned the data for $txid yet '
+            '(it can take several minutes after publishing): '
+            '${arweaveErrors.join('; ')}');
       case StoragePointerKind.git:
         // Conteúdo Git mora num repo, não atrás de um gateway HTTP. Falha
         // logo, em vez de concatenar o ponteiro nas URLs dos gateways IPFS e
@@ -72,7 +86,13 @@ class IpfsGatewayClient implements VaultBlobFetcher {
       if (response.statusCode != 200) {
         throw Exception('HTTP ${response.statusCode}');
       }
-      return await consolidateHttpClientResponseBytes(response);
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      // Um blob de vault nunca é vazio: 200 sem corpo é o gateway ainda sem
+      // o dado, e deixar passar só viraria um "hash não bate" mais adiante.
+      if (bytes.isEmpty) {
+        throw Exception('empty response body');
+      }
+      return bytes;
     } finally {
       client.close();
     }

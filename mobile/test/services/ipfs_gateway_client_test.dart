@@ -140,5 +140,52 @@ void main() {
 
       await arweaveServer.close(force: true);
     });
+    test(
+        'ar://: corpo vazio na rota principal cai pra /raw/<txid> '
+        '(gateway ainda sem o dado logo depois de publicar)', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final bytes = Uint8List.fromList([4, 5, 6]);
+      final paths = <String>[];
+      server.listen((request) async {
+        paths.add(request.uri.path);
+        request.response.statusCode = 200;
+        if (request.uri.path.startsWith('/raw/')) {
+          request.response.add(bytes);
+        }
+        await request.response.close();
+      });
+
+      final client = IpfsGatewayClient(
+        arweaveGateway: 'http://${server.address.address}:${server.port}/',
+      );
+
+      final result = await client.fetch('ar://sometxid');
+      expect(result, equals(bytes));
+      expect(paths, equals(['/sometxid', '/raw/sometxid']));
+
+      await server.close(force: true);
+    });
+
+    test('ar://: as duas rotas vazias lançam erro explicando a demora',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) async {
+        request.response.statusCode = 200;
+        await request.response.close();
+      });
+
+      final client = IpfsGatewayClient(
+        arweaveGateway: 'http://${server.address.address}:${server.port}/',
+      );
+
+      await expectLater(
+        client.fetch('ar://sometxid'),
+        throwsA(predicate((e) =>
+            e.toString().contains('several minutes') &&
+            e.toString().contains('empty response body'))),
+      );
+
+      await server.close(force: true);
+    });
   });
 }
