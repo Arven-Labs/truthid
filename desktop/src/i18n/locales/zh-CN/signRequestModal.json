@@ -13,5 +13,7 @@
   "userOpNotConfirmed": "UserOperation 已被接受但尚未确认 — 稍后可能仍会确认。",
   "signing": "正在签名...",
   "approve": "批准",
-  "reject": "拒绝"
+  "reject": "拒绝",
+  "responseFailed": "交易已发送（{{hash}}），但未能将结果送达请求的应用：{{reason}}。请勿再次批准 — 请在 Basescan 上查看该交易。",
+  "dismiss": "关闭"
 }

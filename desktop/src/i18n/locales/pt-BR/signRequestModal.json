@@ -13,5 +13,7 @@
   "userOpNotConfirmed": "UserOperation aceita mas ainda não confirmada — pode confirmar mais tarde.",
   "signing": "Assinando...",
   "approve": "Aprovar",
-  "reject": "Rejeitar"
+  "reject": "Rejeitar",
+  "responseFailed": "A transação foi enviada ({{hash}}), mas a resposta não chegou ao app que pediu: {{reason}}. Não aprove de novo — confira a transação no Basescan.",
+  "dismiss": "Fechar"
 }

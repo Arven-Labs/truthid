@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { decodeFunctionData, formatEther, parseAbi, toFunctionSelector } from "viem";
 import { useIncomingSignRequest, type IncomingSignRequest } from "../hooks/useIncomingSignRequest";
 import { useRequestExpiry } from "../hooks/useRequestExpiry";
@@ -53,11 +53,14 @@ export function SignRequestModal({ smartAccountAddress }: { smartAccountAddress:
   const { openConnectModal } = useWalletModal();
   const [stage, setStage] = useState<"idle" | "signing" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  // Hash da tx que já executou mas cuja resposta ao app falhou — trava o
+  // Aprovar pra não mandar a mesma transação duas vezes.
+  const [executedHash, setExecutedHash] = useState<string | null>(null);
   const expired = useRequestExpiry(request?.expiresAtMs ?? null);
 
   // Quando o pedido muda (novo ou cancelado), reseta o estado do modal.
   useEffect(() => {
-    if (!request) { setStage("idle"); setError(null); }
+    if (!request) { setStage("idle"); setError(null); setExecutedHash(null); }
   }, [request]);
 
   if (!request) return null;
@@ -99,6 +102,7 @@ export function SignRequestModal({ smartAccountAddress }: { smartAccountAddress:
 
     setStage("signing");
     setError(null);
+    let executed: { userOpHash: Hex; transactionHash: Hex; success: boolean };
     try {
       const { userOpHash, transactionHash, success } = await executeViaUserOp({
         smartAccountAddress,
@@ -110,12 +114,7 @@ export function SignRequestModal({ smartAccountAddress }: { smartAccountAddress:
       if (!transactionHash) {
         throw new Error(t("signRequestModal.userOpNotConfirmed"));
       }
-
-      await invoke("respond_to_sign_request", {
-        id: request.id,
-        decision: { outcome: success ? "executed" : "failed", userOpHash, transactionHash },
-      });
-      clear();
+      executed = { userOpHash, transactionHash, success };
     } catch (e) {
       const message = String(e);
       setError(message);
@@ -124,6 +123,31 @@ export function SignRequestModal({ smartAccountAddress }: { smartAccountAddress:
         id: request.id,
         decision: { outcome: "failed", error: message },
       }).catch(() => {});
+      return;
+    }
+
+    // A transação já foi pra chain: se só a resposta ao app falhar, isso NÃO
+    // é uma falha da transação — antes o catch acima respondia "failed" por
+    // uma tx que tinha executado, e deixava aprovar de novo (tx em dobro).
+    try {
+      await invoke("respond_to_sign_request", {
+        id: request.id,
+        decision: {
+          outcome: executed.success ? "executed" : "failed",
+          userOpHash: executed.userOpHash,
+          transactionHash: executed.transactionHash,
+        },
+      });
+      clear();
+    } catch (e) {
+      setExecutedHash(executed.transactionHash);
+      setError(
+        t("signRequestModal.responseFailed", {
+          hash: executed.transactionHash,
+          reason: String(e),
+        }),
+      );
+      setStage("error");
     }
   }
 
@@ -187,12 +211,16 @@ export function SignRequestModal({ smartAccountAddress }: { smartAccountAddress:
           {error && <p className="error-text">{error}</p>}
 
           <div className="actions-row" style={{ marginTop: "0.75rem" }}>
-            <button onClick={handleApprove} disabled={busy || expired}>
+            <button onClick={handleApprove} disabled={busy || expired || executedHash !== null}>
               {busy ? t("signRequestModal.signing") : t("signRequestModal.approve")}
             </button>
-            <button onClick={handleReject} disabled={busy} className="topbar-btn-danger">
-              {t("signRequestModal.reject")}
-            </button>
+            {executedHash ? (
+              <button onClick={clear}>{t("signRequestModal.dismiss")}</button>
+            ) : (
+              <button onClick={handleReject} disabled={busy} className="topbar-btn-danger">
+                {t("signRequestModal.reject")}
+              </button>
+            )}
           </div>
         </div>
       </div>
