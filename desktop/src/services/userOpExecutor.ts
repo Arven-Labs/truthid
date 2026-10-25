@@ -80,6 +80,23 @@ export async function executeViaUserOp({
     bundlerUrl: pimlicoBundlerUrl({ apiKey: bundlerConfig.api_key, network: bundlerConfig.network || "base" }),
   });
 
+  // Antes de gastar uma chamada ao bundler: a device key precisa estar
+  // autorizada na smart account, senão o EntryPoint devolve só "AA24
+  // signature error". Falha aqui com a causa e o endereço do device.
+  const deviceAddress = await invoke<Address>("get_or_create_device_key");
+  const deviceAuthorized = await readContract(config, {
+    address: smartAccountAddress,
+    abi: TRUTHID_ACCOUNT_ABI,
+    functionName: "authorizedDevices",
+    args: [deviceAddress],
+  });
+  if (!deviceAuthorized) {
+    throw new Error(
+      `This desktop (${deviceAddress}) is not authorized on your smart account, so it cannot sign transactions. ` +
+        "Open Manage devices and register this desktop with your owner wallet, then try again.",
+    );
+  }
+
   const executeCallData = encodeFunctionData({
     abi: TRUTHID_ACCOUNT_ABI,
     functionName: "execute",
