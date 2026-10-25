@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { LanguageSelector } from "./LanguageSelector";
 import { MigrateWallet } from "./MigrateWallet";
+import { BundlerConfig } from "./BundlerConfig";
 import { VaultBackup } from "./VaultBackup";
 import { BitwardenImport } from "./BitwardenImport";
 import { GuardianManagement } from "./GuardianManagement";
@@ -93,6 +94,11 @@ export function Settings({
       <div className="card">
         <h3 style={{ marginTop: 0 }}>{t("settings.wallet.title")}</h3>
         <MigrateWallet onClose={onClose} onBusyChange={onMigrationBusyChange} />
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>{t("settings.bundler.title")}</h3>
+        <BundlerConfig />
       </div>
 
       <div className="card">

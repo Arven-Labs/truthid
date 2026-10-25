@@ -1,0 +1,11 @@
+{
+  "explanation": "Chave de API do Pimlico usada pra enviar transações (bundler). Crie uma chave grátis em dashboard.pimlico.io. Fica guardada só neste dispositivo.",
+  "loading": "Carregando...",
+  "apiKeyLabel": "Chave de API do Pimlico",
+  "showKey": "Mostrar chave",
+  "hideKey": "Ocultar chave",
+  "networkLabel": "Rede",
+  "saveButton": "Salvar",
+  "saving": "Salvando...",
+  "saved": "Salvo."
+}

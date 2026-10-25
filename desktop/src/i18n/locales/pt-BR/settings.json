@@ -6,6 +6,9 @@
   "wallet": {
     "title": "Wallet"
   },
+  "bundler": {
+    "title": "Transações (Pimlico)"
+  },
   "appLock": {
     "title": "Bloqueio do app",
     "explanation": "Exige uma senha pra abrir o TruthID. Opcional — desligado por padrão.",
