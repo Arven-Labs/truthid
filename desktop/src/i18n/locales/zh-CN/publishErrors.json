@@ -1,0 +1,14 @@
+{
+  "stepPrefix": "第 {{n}} 步，共 3 步 — {{name}}",
+  "steps": {
+    "upload": "正在上传到 Arweave",
+    "sign": "正在签名并发送交易",
+    "confirm": "正在等待链上确认"
+  },
+  "noWallet": "此电脑上尚未设置 Arweave 钱包。请在 Arweave 标签页生成或导入一个，充入一些 AR 后重试。",
+  "insufficientBalance": "Arweave 钱包的 AR 不足：本次上传需要 {{needed}} AR，钱包中只有 {{has}} AR。请向钱包充值 AR 后重试。",
+  "nothingToPublish": "还没有可发布的内容 — 请先向密码库添加至少一个条目。",
+  "network": "无法连接到 Arweave 网络。请检查网络连接后重试。（{{raw}}）",
+  "reverted": "交易已上链但被回滚，因此链上的密码库没有更新。",
+  "notConfirmedYet": "交易已发送但未能及时确认。它可能在一分钟内仍会确认 — 请先确认后再重新发送。"
+}
