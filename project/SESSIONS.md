@@ -7703,3 +7703,15 @@ commit do #5, feito antes nesta mesma sessão — total 5 commits, 1 por achado 
 relacionados). **Fecha os 10 achados da Sessão 140 — nenhuma pendência de código restante dessa
 rodada de review.**
 
+
+### Sessão 184 — 2026-10-29: padrão de fluxo entre os projetos (template de PR e guard)
+
+**Pedido**: o dono pediu para padronizar o fluxo entre os cinco projetos (anchor, kin, lume, truthid, warden) e "alinhar o máximo de coisas possíveis". Fonte das peças: pasta `padrao/` do repo `masterlxz/workspace` (privado), ADR 0005 de lá.
+
+**Decisões do dono**: ruleset `protect-main` igual em todos (PR com 0 aprovações, check `guard` obrigatório, sem force push, sem apagar a `main`, admin só via PR); `guard` genérico; template de PR do warden; secret scanning, push protection e alertas do Dependabot ligados; logs de sessão não são reordenados; CI de testes por stack fica para outra rodada.
+
+**Feito** (este PR, `chore/padrao-fluxo`): `.github/pull_request_template.md` e `.github/workflows/ci-private-files.yml` (job `guard`: barra segredo, chave e credencial rastreados). Nenhum código tocado. O `INDEX.md` não foi alterado: a linha "Última atualização" dele parou na Sessão 152 e o log vai até a 183; não mexi para não misturar com outra correção.
+
+**Fica**: depois do merge e do `guard` verde na `main`, ligar o ruleset, os recursos de segurança e o `delete_branch_on_merge` (mudança de CI/permissões: uma confirmação do dono por repositório, §4). Ligar o ruleset antes deixaria todo PR esperando um check que nunca reporta. O truthid é repositório público e tem workflows de build e release com segredos de assinatura; qualquer mudança de CI/permissões pede a confirmação do dono. CI de testes em PR: outra rodada.
+
+**Não verificado**: o `guard` ainda não rodou no GitHub (o PR não foi aberto). Foi testado só localmente, com fixtures (`padrao/test-guard.sh` no workspace) e contra os arquivos já rastreados do repo, sem nenhum acerto.
