@@ -76,6 +76,10 @@ Prebuilt binaries (Desktop for Linux/Windows/macOS, Mobile APK, browser extensio
 
 ## Building from source
 
+> **For AI agents:** the commands below are for a human on a personal PC. On the agent's
+> development VM, running tests, builds or `flutter analyze` is forbidden (workspace ADR 0017):
+> tests run only on GitHub (CI) and builds only on the owner's PC, by hand.
+
 **Smart contracts** ([Foundry](https://book.getfoundry.sh/)):
 ```
 cd contracts
